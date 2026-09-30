@@ -1,58 +1,69 @@
 # 财务明细核对 Skill
 
-给 Codex 的可复用技能：提供两份 Excel/CSV，按编号核对金额，得到差异表、异常清单和可复核运行记录。无需网页、服务器、API Key 或云端上传。
+**首次确认核对方式，以后换两份文件即可重跑。** 面向重复的台账/系统明细核对，AI组织流程，本地脚本精确计算，用户在Excel里处理例外。
 
-## 使用
+## 你会拿到什么
 
-将此文件夹复制到你自己的 `~/.codex/skills/finance-reconcile/`，在新的 Codex 会话中调用：
+- 一份复核工作簿：汇总、待处理、已匹配、历史记录。
+- 可筛选的差异、原始来源行、黄色处理状态与意见列。
+- 重跑时沿用未变化条目的意见；内容变化则要求重新复核；本次未出现的条目保留在历史。
+- 本地核对配置，保存字段映射、工作表和表头，省掉重复解释。
 
-> 使用 $finance-reconcile 核对这两份表：左表按编号和金额，右表按单据号和余额。把差异整理出来。
+## 安装与使用
 
-运行环境：Node.js 18+。CSV/TSV 无第三方依赖；XLSX 另需 Python 3.9+ 与 openpyxl，可由使用者自行运行 `python3 -m pip install -r requirements.txt`，或使用已有环境。
+下载仓库，将目录放到 `~/.codex/skills/finance-reconcile/`。运行环境为Node.js 18+、Python 3.9+，Python环境需要 `python3 -m pip install -r requirements.txt`。已有依赖可直接复用。新开Codex会话：
 
-XLSX 表头在第3行时，加 `--left-header-row 3`；多工作表用 `--left-sheet 明细` 指定。右表有对应参数。输出编号定位到原工作表行号。
+> 使用 $finance-reconcile 核对这两份表，保存这次核对方式，给我可以填写处理意见的Excel。
 
-也可单独运行脚本（在本文件夹中）：
+以后说：
+
+> 按上次的配置核对这两份新表，沿用这份上次结果里的处理意见。
+
+技能会运行以下流程，用户不必手工拼命令。
+
+## 独立运行
+
+首次（在仓库目录，示例数据全部虚构）：
 
 ```sh
-node scripts/reconcile.cjs --left examples/左表.csv --right examples/右表.csv --single-key-confirmed --left-key 编号 --left-amount 金额 --right-key 单据号 --right-amount 余额 --out 样例结果
+python3 scripts/workflow.py --left examples/左表.csv --right examples/右表.csv --left-keys '["客户","编号"]' --right-keys '["客户名称","单据号"]' --left-amount 金额 --right-amount 余额 --save-config 核对配置.json --out 首次结果
+```
+
+在 `首次结果/复核工作簿.xlsx` 的黄色列填写状态与意见。以后换新文件重跑：
+
+```sh
+python3 scripts/workflow.py --config 核对配置.json --left 新左表.csv --right 新右表.csv --previous 首次结果/复核工作簿.xlsx --out 本次结果
+```
+
+配置和结果不覆盖已有文件。非首行表头用 `--left-header-row 3`，多工作表用 `--left-sheet 明细`，右表有对应参数。用哪个Python装依赖，就用哪个Python运行。Node不在PATH时用 `--node` 指定路径。
+
+## 意见复用规则
+
+| 情况 | 重跑行为 |
+|---|---|
+| 同一编号/联合键，完整行内容与核对结果未变化 | 沿用处理状态和意见，即使源行顺序变了 |
+| 金额、说明或匹配关系变化 | 保留旧意见，状态改为需重新复核 |
+| 新编号 | 标记新增 |
+| 上次有、本次没有 | 移到历史记录，不当作已解决 |
+| 重复编号 / 空编号 | 重复键始终要求复核；空编号不继承意见 |
+| 配置或表头变化 | 停止，要求核实格式和映射 |
+
+请保留Excel表头及隐藏标识列，处理意见填文本。历史重现条目按新增处理，不自动恢复久远意见。复核意见保存在你指定的本地工作簿，AI默认只读汇总。
+
+## 能力边界
+
+当前 v0.5.0。支持UTF-8 CSV/TSV及XLSX、联合键、精确到分的金额核对；重复/无效金额保留为异常。分批回款、合并付款由人核实。XLSX公式需先重算并导出值，不支持旧xls。最多5000条明细、50列；金额字段保留两位小数。更多边界见 [SKILL.md](SKILL.md)。底层CSV模式仍可用 `node scripts/reconcile.cjs --help`。
+
+工作簿金额以精确文本显示，避免Excel长数字截断；这是复核结果，不是公式计算模型。脚本不联网，AI对话本身是否联网由宿主决定。
+
+## 验证与贡献
+
+```sh
 node --test tests/*.test.cjs
+python3 tests/test_integration.py
+python3 tests/test_workflow.py
 ```
 
-输出目录必须是新目录。模拟样例包含一分钱级差异、重复编号、单边记录、空编号和无效金额；样例全部虚构，不含个人账目。限制与精确处理口径见 SKILL.md。
+测试覆盖配置复用、完整行变化、意见保留、历史记录、单元格公式防护和失败不留半成品。没有声称真实用户节省了多少时间。提交问题请附最小虚构样例，不要上传真实账单和个人信息。
 
-## 和一句提示词有什么区别
-
-SKILL.md 告诉 AI 何时调用、如何确认口径；脚本负责可重复的精确运算；样例和测试让别人能够检查结果。重复单据不会被静默覆盖，未知金额不会被当作零。
-
-## 参考与贡献
-
-主要参考现成技能 [finance-copilot-skills](https://github.com/cxtx/finance-copilot-skills) 的本地确定性执行、运行清单与汇总披露设计，以及 [cpa-skills](https://github.com/adoptai/cpa-skills) 的记录完整性与证据追查思路。详细比较见 [参考对比.md](参考对比.md)。
-
-早期参考 [simonw/csv-diff](https://github.com/simonw/csv-diff) 的按键匹配思路；参考 [csv-diff-browser](https://github.com/SaurabhBaranawal/csv-diff-browser) 的双表差异工作流。没有复制其代码。此实现由 AI 协助编写，验证记录见 VALIDATION.md。欢迎提交可复现的匿名样例及预期结果。
-
-当前为 v0.4.0 初版。财务差异需回查业务原始记录。本包仅做明细核对，不代替审计判断。
-
-## 输出长什么样
-
-| 编号 | 状态 | 示例说明 |
-|---|---|---|
-| AR003 | 金额差异 | 左表 1,250.10，右表 1,250.00，差额 0.10 |
-| AR002 | 重复编号 | 左表出现两笔，全部保留，等待确认核对粒度 |
-| AR004 / AR005 | 单边记录 | 需要检查遗漏或截止日期 |
-
-完整模拟产物在 [examples/核对结果](examples/核对结果)。`运行清单.json` 可复算输入输出 SHA-256 并检查每条输入记录是否恰好出现一次。这个检查保证处理完整性，不保证业务内容真实。
-
-## 贡献与隐私
-
-提交问题时写明版本、文件格式、运行参数及预期结果，仅附最小模拟样例。请勿提交真实账单、个人信息或凭据。项目由 AI 协助编写，维护者负责复核；MIT 许可允许使用和修改。
-
-## 防止同号误配
-
-跨客户数据优先联合匹配：
-
-```sh
-node scripts/reconcile.cjs --left 左表.csv --right 右表.csv --left-keys '["客户","编号"]' --right-keys '["客户名称","单号"]' --left-amount 金额 --right-amount 金额 --out 新结果目录
-```
-
-两表都有客户/公司字段时，未确认的单列匹配会停止。只有编号在本次全范围内确实唯一，才用 `--single-key-confirmed`。联合编号在报告中以 JSON 数组显示，保留每个组成字段，避免分隔符碰撞。
+主要参考 [finance-copilot-skills](https://github.com/cxtx/finance-copilot-skills) 与 [cpa-skills](https://github.com/adoptai/cpa-skills) 的工作流设计；早期参考 [csv-diff](https://github.com/simonw/csv-diff) 与 [csv-diff-browser](https://github.com/SaurabhBaranawal/csv-diff-browser)。实现由AI协助编写，没有复制上述仓库代码；比较见 [参考对比.md](参考对比.md)。MIT许可。

@@ -40,7 +40,7 @@ function reconcile(left,right,lk,la,rk,ra){
   const keys=Array.isArray(key)?key:[key];
   if(!keys.length||new Set(keys).size!==keys.length||keys.some(k=>!Number.isInteger(k)||k<0||k>=data.headers.length||k===amount)||!Number.isInteger(amount)||amount<0||amount>=data.headers.length)throw Error('编号列与金额列需要选择不同的有效列。');
   const groups=new Map(),invalid=[];let total=0n,bad=0;
-  data.rows.forEach((r,i)=>{const parts=keys.map(k=>r[k].trim());const id=parts.some(v=>!v)?'':keys.length===1?parts[0]:JSON.stringify(parts),n=money(r[amount]);const item={line:data.sourceLines?.[i]??i+2,id,raw:r[amount],amount:n};if(n===null)bad++;else total+=n;if(!id)invalid.push(item);else {if(!groups.has(id))groups.set(id,[]);groups.get(id).push(item);}});
+  data.rows.forEach((r,i)=>{const parts=keys.map(k=>r[k].trim());const id=parts.some(v=>!v)?'':keys.length===1?parts[0]:JSON.stringify(parts),n=money(r[amount]);const item={line:data.sourceLines?.[i]??i+2,id,raw:r[amount],amount:n,values:r};if(n===null)bad++;else total+=n;if(!id)invalid.push(item);else {if(!groups.has(id))groups.set(id,[]);groups.get(id).push(item);}});
   return {groups,invalid,total:bad?null:total,bad};
  }
  const l=prep(left,lk,la),r=prep(right,rk,ra),result=[];

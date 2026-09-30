@@ -1,6 +1,6 @@
 interface:
   display_name: "财务明细核对"
-  short_description: "核对 Excel 与 CSV 明细，保留重复编号、缺失记录和金额差异"
+  short_description: "保存核对方式，换表重跑并生成保留处理意见的 Excel 复核工作簿"
   default_prompt: "使用 $finance-reconcile 核对这两份财务明细，输出差异表并说明需要核实的记录。"
 policy:
   allow_implicit_invocation: true

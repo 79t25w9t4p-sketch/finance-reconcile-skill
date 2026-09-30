@@ -3,3 +3,6 @@ __pycache__/
 .DS_Store
 .venv/
 样例结果/
+核对配置.json
+首次结果/
+本次结果/

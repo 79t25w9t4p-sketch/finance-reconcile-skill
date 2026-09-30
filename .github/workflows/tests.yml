@@ -16,3 +16,4 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - run: node --test tests/*.test.cjs
       - run: python tests/test_integration.py
+      - run: python tests/test_workflow.py
