@@ -1,0 +1,52 @@
+# coding: utf-8
+import unittest, tempfile, subprocess, os, json
+from pathlib import Path
+import sys
+import hashlib
+import openpyxl
+ROOT=Path(__file__).resolve().parents[1]
+NODE=os.environ.get('NODE','node')
+class Integration(unittest.TestCase):
+    def run_cli(self,*args):
+        return subprocess.run([NODE,str(ROOT/'scripts/reconcile.cjs'),*map(str,args)],capture_output=True,text=True)
+    def workbook(self,path,formula=False,multiple=False):
+        wb=openpyxl.Workbook();ws=wb.active;ws.title='明细'
+        ws.append(['编号','金额']);ws.append(['001','=1+1' if formula else 0.30])
+        if multiple: wb.create_sheet('其他')
+        wb.save(path)
+    def test_csv_report_and_overwrite_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            out=Path(d)/'report'
+            args=['--left',ROOT/'examples/左表.csv','--right',ROOT/'examples/右表.csv','--left-key','编号','--left-amount','金额','--right-key','单据号','--right-amount','余额','--out',out]
+            r=self.run_cli(*args);self.assertEqual(r.returncode,0,r.stderr)
+            summary=json.loads(r.stdout);self.assertEqual(summary['counts']['重复编号'],1)
+            report=json.loads((out/'核对记录.json').read_text());self.assertEqual(next(x for x in report['result'] if x['id']=='AR003')['delta'],'10')
+            manifest=json.loads((out/'运行清单.json').read_text());self.assertTrue(manifest['coverage']['left']['everyRecordExactlyOnce']);self.assertEqual(manifest['coverage']['left']['reportedRows'],7);self.assertEqual(manifest['inputs']['left']['sha256'],hashlib.sha256((ROOT/'examples/左表.csv').read_bytes()).hexdigest());self.assertEqual(manifest['outputs'][0]['sha256'],hashlib.sha256((out/'差异表.csv').read_bytes()).hexdigest())
+            before=(out/'差异表.csv').read_bytes();self.assertNotEqual(self.run_cli(*args).returncode,0);self.assertEqual(before,(out/'差异表.csv').read_bytes())
+    def test_xlsx_exact_text_identifier(self):
+        with tempfile.TemporaryDirectory() as d:
+            left=Path(d)/'left.xlsx';right=Path(d)/'right.csv';self.workbook(left);right.write_text('编号,金额\n001,0.29',encoding='utf8')
+            r=self.run_cli('--left',left,'--right',right,'--python',sys.executable,'--left-key','编号','--left-amount','金额','--right-key','编号','--right-amount','金额','--out',Path(d)/'result')
+            self.assertEqual(r.returncode,0,r.stderr)
+            report=json.loads((Path(d)/'result/核对记录.json').read_text());self.assertEqual(report['result'][0]['delta'],'1');self.assertEqual(report['result'][0]['id'],'001')
+    def test_xlsx_header_offset_and_original_rows(self):
+        with tempfile.TemporaryDirectory() as d:
+            left=Path(d)/'offset.xlsx';right=Path(d)/'right.csv'
+            wb=openpyxl.Workbook();ws=wb.active;ws.append(['导出说明']);ws.append([]);ws.append(['编号','金额']);ws.append(['001',0.30]);ws.append([]);ws.append(['002',2]);wb.save(left)
+            right.write_text('编号,金额\n001,0.29\n002,2',encoding='utf8')
+            r=self.run_cli('--left',left,'--right',right,'--python',sys.executable,'--left-header-row','3','--left-key','编号','--left-amount','金额','--right-key','编号','--right-amount','金额','--out',Path(d)/'result')
+            self.assertEqual(r.returncode,0,r.stderr)
+            report=json.loads((Path(d)/'result/核对记录.json').read_text());self.assertEqual([x['left'][0]['line'] for x in report['result']],[4,6])
+            manifest=json.loads((Path(d)/'result/运行清单.json').read_text());self.assertEqual(manifest['inputs']['left']['headerRow'],3);self.assertEqual(manifest['inputs']['left']['sheet'],'Sheet')
+    def test_help_requires_no_input(self):
+        r=self.run_cli('--help');self.assertEqual(r.returncode,0);self.assertIn('0.3.0',r.stdout)
+    def test_formula_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'formula.xlsx';self.workbook(p,formula=True)
+            r=self.run_cli('--left',p,'--right',p,'--python',sys.executable,'--inspect');self.assertNotEqual(r.returncode,0);self.assertIn('Formula',r.stderr)
+    def test_multisheet_requires_selection(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'multi.xlsx';self.workbook(p,multiple=True)
+            r=self.run_cli('--left',p,'--right',p,'--python',sys.executable,'--inspect');self.assertNotEqual(r.returncode,0)
+            r=self.run_cli('--left',p,'--right',p,'--python',sys.executable,'--left-sheet','明细','--right-sheet','明细','--inspect');self.assertEqual(r.returncode,0,r.stderr)
+if __name__=='__main__': unittest.main()

@@ -1,0 +1,67 @@
+{
+  "skill": "finance-reconcile",
+  "version": "0.3.0",
+  "runAt": "2026-09-30T02:54:35.739Z",
+  "inputs": {
+    "left": {
+      "file": "左表.csv",
+      "sha256": "b694f22733fef89b7e372b6e8641f30f93dbdfafd07d363cb0cfe987912c1a3e",
+      "sheet": null,
+      "headerRow": 1,
+      "rows": 7
+    },
+    "right": {
+      "file": "右表.csv",
+      "sha256": "5df87063c7ad1126c8921ef74d78ddf1ca066d66a77ee636418f3d311eac6732",
+      "sheet": null,
+      "headerRow": 1,
+      "rows": 5
+    }
+  },
+  "fieldMapping": {
+    "left": {
+      "key": "编号",
+      "amount": "金额"
+    },
+    "right": {
+      "key": "单据号",
+      "amount": "余额"
+    }
+  },
+  "rules": {
+    "id": "trim-case-sensitive",
+    "amount": "integer-cents-exact",
+    "duplicates": "retain-all-no-aggregation",
+    "delta": "left-minus-right"
+  },
+  "coverage": {
+    "left": {
+      "inputRows": 7,
+      "reportedRows": 7,
+      "everyRecordExactlyOnce": true
+    },
+    "right": {
+      "inputRows": 5,
+      "reportedRows": 5,
+      "everyRecordExactlyOnce": true
+    }
+  },
+  "outputs": [
+    {
+      "file": "差异表.csv",
+      "sha256": "eb56ff2b9418a2c7f26d3f86deea9e85b6669ffabc6a3c1bc98bfec413318f57"
+    },
+    {
+      "file": "完整核对表.csv",
+      "sha256": "ead843ce1623ac480ef00a12950042b4e28c3cbc6eb7f1a8b1fa8a3a48e97ab0"
+    },
+    {
+      "file": "核对记录.json",
+      "sha256": "5958e570040c4c803bdf632565e4598dac079d994118791245bed5fd68d48349"
+    },
+    {
+      "file": "摘要.json",
+      "sha256": "8878b28eb60e99f6b783475c16b4ee4f5734c3848dba59243eb28d2472cabad8"
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "result": [
+    {
+      "id": "AR001",
+      "status": "一致",
+      "left": [
+        {
+          "line": 2,
+          "id": "AR001",
+          "raw": "40000.00",
+          "amount": "4000000"
+        }
+      ],
+      "right": [
+        {
+          "line": 3,
+          "id": "AR001",
+          "raw": "40000.00",
+          "amount": "4000000"
+        }
+      ],
+      "delta": "0"
+    },
+    {
+      "id": "AR002",
+      "status": "重复编号",
+      "left": [
+        {
+          "line": 3,
+          "id": "AR002",
+          "raw": "20000.00",
+          "amount": "2000000"
+        },
+        {
+          "line": 4,
+          "id": "AR002",
+          "raw": "20000.00",
+          "amount": "2000000"
+        }
+      ],
+      "right": [
+        {
+          "line": 4,
+          "id": "AR002",
+          "raw": "20000.00",
+          "amount": "2000000"
+        }
+      ],
+      "delta": null
+    },
+    {
+      "id": "AR003",
+      "status": "金额差异",
+      "left": [
+        {
+          "line": 5,
+          "id": "AR003",
+          "raw": "1250.10",
+          "amount": "125010"
+        }
+      ],
+      "right": [
+        {
+          "line": 2,
+          "id": "AR003",
+          "raw": "1250.00",
+          "amount": "125000"
+        }
+      ],
+      "delta": "10"
+    },
+    {
+      "id": "AR004",
+      "status": "仅左表",
+      "left": [
+        {
+          "line": 6,
+          "id": "AR004",
+          "raw": "500.00",
+          "amount": "50000"
+        }
+      ],
+      "right": [],
+      "delta": null
+    },
+    {
+      "id": "AR006",
+      "status": "无效金额",
+      "left": [
+        {
+          "line": 8,
+          "id": "AR006",
+          "raw": "待核实",
+          "amount": null
+        }
+      ],
+      "right": [
+        {
+          "line": 6,
+          "id": "AR006",
+          "raw": "1000.00",
+          "amount": "100000"
+        }
+      ],
+      "delta": null
+    },
+    {
+      "id": "AR005",
+      "status": "仅右表",
+      "left": [],
+      "right": [
+        {
+          "line": 5,
+          "id": "AR005",
+          "raw": "800.00",
+          "amount": "80000"
+        }
+      ],
+      "delta": null
+    },
+    {
+      "id": "（空编号）",
+      "status": "空编号",
+      "left": [
+        {
+          "line": 7,
+          "id": "",
+          "raw": "300.00",
+          "amount": "30000"
+        }
+      ],
+      "right": [],
+      "delta": null
+    }
+  ],
+  "leftTotal": null,
+  "rightTotal": "6305000",
+  "leftBad": 1,
+  "rightBad": 0,
+  "leftRows": 7,
+  "rightRows": 5
+}
