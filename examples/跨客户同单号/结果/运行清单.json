@@ -1,0 +1,73 @@
+{
+  "skill": "finance-reconcile",
+  "version": "0.4.0",
+  "runAt": "2026-09-30T08:42:01.405Z",
+  "inputs": {
+    "left": {
+      "file": "左表.csv",
+      "sha256": "4e8bd8b00422c9b2ba05c8064c3a6ac650506731f9f8db9c35eac64436c4db4f",
+      "sheet": null,
+      "headerRow": 1,
+      "rows": 1
+    },
+    "right": {
+      "file": "右表.csv",
+      "sha256": "19b5abf8a64652c580f1dbb42f083645a277e957fe409533c8401f67050f6b1e",
+      "sheet": null,
+      "headerRow": 1,
+      "rows": 1
+    }
+  },
+  "fieldMapping": {
+    "left": {
+      "keys": [
+        "客户",
+        "编号"
+      ],
+      "amount": "金额"
+    },
+    "right": {
+      "keys": [
+        "客户",
+        "编号"
+      ],
+      "amount": "金额"
+    }
+  },
+  "rules": {
+    "id": "ordered-tuple-trim-case-sensitive",
+    "amount": "integer-cents-exact",
+    "duplicates": "retain-all-no-aggregation",
+    "delta": "left-minus-right"
+  },
+  "coverage": {
+    "left": {
+      "inputRows": 1,
+      "reportedRows": 1,
+      "everyRecordExactlyOnce": true
+    },
+    "right": {
+      "inputRows": 1,
+      "reportedRows": 1,
+      "everyRecordExactlyOnce": true
+    }
+  },
+  "outputs": [
+    {
+      "file": "差异表.csv",
+      "sha256": "bf464bbf1c69caff48ec89a8b6dc5c44fc583deca084fb14db054caf32284320"
+    },
+    {
+      "file": "完整核对表.csv",
+      "sha256": "bf464bbf1c69caff48ec89a8b6dc5c44fc583deca084fb14db054caf32284320"
+    },
+    {
+      "file": "核对记录.json",
+      "sha256": "69fde2b9b029776bd1be76b454c703c978e2b078628b80a5400b6cda69b337b0"
+    },
+    {
+      "file": "摘要.json",
+      "sha256": "c468539ef17825704180d6d91e43a69bad3c53e63e60120c7fdeb58b0f409961"
+    }
+  ]
+}

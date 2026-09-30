@@ -15,7 +15,7 @@ XLSX 表头在第3行时，加 `--left-header-row 3`；多工作表用 `--left-s
 也可单独运行脚本（在本文件夹中）：
 
 ```sh
-node scripts/reconcile.cjs --left examples/左表.csv --right examples/右表.csv --left-key 编号 --left-amount 金额 --right-key 单据号 --right-amount 余额 --out 样例结果
+node scripts/reconcile.cjs --left examples/左表.csv --right examples/右表.csv --single-key-confirmed --left-key 编号 --left-amount 金额 --right-key 单据号 --right-amount 余额 --out 样例结果
 node --test tests/*.test.cjs
 ```
 
@@ -31,7 +31,7 @@ SKILL.md 告诉 AI 何时调用、如何确认口径；脚本负责可重复的�
 
 早期参考 [simonw/csv-diff](https://github.com/simonw/csv-diff) 的按键匹配思路；参考 [csv-diff-browser](https://github.com/SaurabhBaranawal/csv-diff-browser) 的双表差异工作流。没有复制其代码。此实现由 AI 协助编写，验证记录见 VALIDATION.md。欢迎提交可复现的匿名样例及预期结果。
 
-当前为 v0.3.0 初版。财务差异需回查业务原始记录。本包仅做明细核对，不代替审计判断。
+当前为 v0.4.0 初版。财务差异需回查业务原始记录。本包仅做明细核对，不代替审计判断。
 
 ## 输出长什么样
 
@@ -46,3 +46,13 @@ SKILL.md 告诉 AI 何时调用、如何确认口径；脚本负责可重复的�
 ## 贡献与隐私
 
 提交问题时写明版本、文件格式、运行参数及预期结果，仅附最小模拟样例。请勿提交真实账单、个人信息或凭据。项目由 AI 协助编写，维护者负责复核；MIT 许可允许使用和修改。
+
+## 防止同号误配
+
+跨客户数据优先联合匹配：
+
+```sh
+node scripts/reconcile.cjs --left 左表.csv --right 右表.csv --left-keys '["客户","编号"]' --right-keys '["客户名称","单号"]' --left-amount 金额 --right-amount 金额 --out 新结果目录
+```
+
+两表都有客户/公司字段时，未确认的单列匹配会停止。只有编号在本次全范围内确实唯一，才用 `--single-key-confirmed`。联合编号在报告中以 JSON 数组显示，保留每个组成字段，避免分隔符碰撞。

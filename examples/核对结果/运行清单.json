@@ -1,7 +1,7 @@
 {
   "skill": "finance-reconcile",
-  "version": "0.3.0",
-  "runAt": "2026-09-30T02:54:35.739Z",
+  "version": "0.4.0",
+  "runAt": "2026-09-30T08:43:02.767Z",
   "inputs": {
     "left": {
       "file": "左表.csv",
@@ -20,16 +20,20 @@
   },
   "fieldMapping": {
     "left": {
-      "key": "编号",
+      "keys": [
+        "编号"
+      ],
       "amount": "金额"
     },
     "right": {
-      "key": "单据号",
+      "keys": [
+        "单据号"
+      ],
       "amount": "余额"
     }
   },
   "rules": {
-    "id": "trim-case-sensitive",
+    "id": "ordered-tuple-trim-case-sensitive",
     "amount": "integer-cents-exact",
     "duplicates": "retain-all-no-aggregation",
     "delta": "left-minus-right"

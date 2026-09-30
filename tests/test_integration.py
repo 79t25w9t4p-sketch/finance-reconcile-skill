@@ -17,7 +17,7 @@ class Integration(unittest.TestCase):
     def test_csv_report_and_overwrite_refused(self):
         with tempfile.TemporaryDirectory() as d:
             out=Path(d)/'report'
-            args=['--left',ROOT/'examples/左表.csv','--right',ROOT/'examples/右表.csv','--left-key','编号','--left-amount','金额','--right-key','单据号','--right-amount','余额','--out',out]
+            args=['--single-key-confirmed','--left',ROOT/'examples/左表.csv','--right',ROOT/'examples/右表.csv','--left-key','编号','--left-amount','金额','--right-key','单据号','--right-amount','余额','--out',out]
             r=self.run_cli(*args);self.assertEqual(r.returncode,0,r.stderr)
             summary=json.loads(r.stdout);self.assertEqual(summary['counts']['重复编号'],1)
             report=json.loads((out/'核对记录.json').read_text());self.assertEqual(next(x for x in report['result'] if x['id']=='AR003')['delta'],'10')
@@ -39,7 +39,14 @@ class Integration(unittest.TestCase):
             report=json.loads((Path(d)/'result/核对记录.json').read_text());self.assertEqual([x['left'][0]['line'] for x in report['result']],[4,6])
             manifest=json.loads((Path(d)/'result/运行清单.json').read_text());self.assertEqual(manifest['inputs']['left']['headerRow'],3);self.assertEqual(manifest['inputs']['left']['sheet'],'Sheet')
     def test_help_requires_no_input(self):
-        r=self.run_cli('--help');self.assertEqual(r.returncode,0);self.assertIn('0.3.0',r.stdout)
+        r=self.run_cli('--help');self.assertEqual(r.returncode,0);self.assertIn('0.4.0',r.stdout)
+    def test_composite_keys_prevent_cross_customer_match(self):
+        with tempfile.TemporaryDirectory() as d:
+            left=Path(d)/'left.csv';right=Path(d)/'right.csv'
+            left.write_text('客户,编号,金额\n甲,001,100',encoding='utf8');right.write_text('客户名称,单号,金额\n乙,001,100',encoding='utf8')
+            base=['--left',left,'--right',right,'--left-amount','金额','--right-amount','金额']
+            blocked=self.run_cli(*base,'--left-key','编号','--right-key','单号','--out',Path(d)/'blocked');self.assertNotEqual(blocked.returncode,0);self.assertFalse((Path(d)/'blocked').exists())
+            r=self.run_cli(*base,'--left-keys','["客户","编号"]','--right-keys','["客户名称","单号"]','--out',Path(d)/'result');self.assertEqual(r.returncode,0,r.stderr);self.assertEqual(json.loads(r.stdout)['counts'],{'仅左表':1,'仅右表':1})
     def test_formula_refused(self):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'formula.xlsx';self.workbook(p,formula=True)

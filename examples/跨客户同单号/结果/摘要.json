@@ -1,0 +1,12 @@
+{
+  "leftRows": 1,
+  "rightRows": 1,
+  "leftTotal": "100.00",
+  "rightTotal": "100.00",
+  "counts": {
+    "仅左表": 1,
+    "仅右表": 1
+  },
+  "moneyUnit": "输入金额单位，保留两位小数；JSON 整数金额单位为分",
+  "differenceRule": "左表减右表；重复或异常不计算差额"
+}

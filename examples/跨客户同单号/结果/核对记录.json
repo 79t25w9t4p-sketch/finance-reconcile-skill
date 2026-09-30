@@ -1,0 +1,38 @@
+{
+  "result": [
+    {
+      "id": "[\"甲公司\",\"001\"]",
+      "status": "仅左表",
+      "left": [
+        {
+          "line": 2,
+          "id": "[\"甲公司\",\"001\"]",
+          "raw": "100",
+          "amount": "10000"
+        }
+      ],
+      "right": [],
+      "delta": null
+    },
+    {
+      "id": "[\"乙公司\",\"001\"]",
+      "status": "仅右表",
+      "left": [],
+      "right": [
+        {
+          "line": 2,
+          "id": "[\"乙公司\",\"001\"]",
+          "raw": "100",
+          "amount": "10000"
+        }
+      ],
+      "delta": null
+    }
+  ],
+  "leftTotal": "10000",
+  "rightTotal": "10000",
+  "leftBad": 0,
+  "rightBad": 0,
+  "leftRows": 1,
+  "rightRows": 1
+}
