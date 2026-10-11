@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "version": "0.8.2",
+  "version": "0.8.3",
   "repository": "79t25w9t4p-sketch/finance-reconcile-skill",
-  "revision": "a104a1e1c830553cf2e6d4132f6c3300a3d488ad",
+  "revision": "f71d2dc39218cdab41996bbccff665a6b8d4949a",
   "files": [
     {
       "path": ".gitignore",
@@ -11,8 +11,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "size": 4106,
-      "git_blob_sha1": "8dab0c6be7a1f9edb1bf8a93ae8847e513be389f"
+      "size": 4600,
+      "git_blob_sha1": "03bcef8bae87de43000a0eaba7e9ebd5129ca445"
     },
     {
       "path": "LICENSE",
@@ -21,18 +21,18 @@
     },
     {
       "path": "README.md",
-      "size": 7125,
-      "git_blob_sha1": "3ed913c4a1837b506177028e7253fa8ba17c4c7f"
+      "size": 7131,
+      "git_blob_sha1": "1d92770d10231d61b798c1462e46b6dab2fe39d4"
     },
     {
       "path": "SKILL.md",
-      "size": 10201,
-      "git_blob_sha1": "edfedd08719eddcf48cbb9e309592a348c7a7dbb"
+      "size": 10300,
+      "git_blob_sha1": "7620ac5bf980bcfae7216f54fb182df652237d4f"
     },
     {
       "path": "VALIDATION.md",
-      "size": 8220,
-      "git_blob_sha1": "29303c03665a7d3a562c310bf35c0be4c87292ef"
+      "size": 9160,
+      "git_blob_sha1": "1cc43d155d1a33805b52d16153eaa74936c24acd"
     },
     {
       "path": "agents/openai.yaml",
@@ -42,7 +42,7 @@
     {
       "path": "docs/分享文案.md",
       "size": 2335,
-      "git_blob_sha1": "9b5dbcfbaaf64ceaf362a1b22382907a053a5115"
+      "git_blob_sha1": "d327bc0d937274d0156483a63a917c93a3e6a688"
     },
     {
       "path": "docs/定位与改良方案.md",
@@ -51,8 +51,8 @@
     },
     {
       "path": "docs/新手第一次使用.md",
-      "size": 4436,
-      "git_blob_sha1": "eb3bee335715386c2288ed929a33272ef0a7bcc7"
+      "size": 4448,
+      "git_blob_sha1": "461ca74f56eaedfddd15b9cf780a20d89443e3eb"
     },
     {
       "path": "docs/试用反馈.md",
@@ -177,22 +177,22 @@
     {
       "path": "scripts/reconcile.py",
       "size": 9092,
-      "git_blob_sha1": "cb4fb0b05d75a634a44316c4d3e3640ef07dd672"
+      "git_blob_sha1": "bf0fffaf863529143028ae08e2968692f4775c6e"
     },
     {
       "path": "scripts/suggest.py",
-      "size": 7011,
-      "git_blob_sha1": "074ca48239cef0152da49a49848d09c4689691d1"
+      "size": 7208,
+      "git_blob_sha1": "35b21446a7e72fc7a10bf7f0a1dd3822fe05198d"
     },
     {
       "path": "scripts/workflow.py",
       "size": 23114,
-      "git_blob_sha1": "4c1dbe9a7fe65e8433f87fd3dbd2ac29f3adbcdb"
+      "git_blob_sha1": "57498481bd61d953107a7bda095950186205bd4f"
     },
     {
       "path": "scripts/xlsx_read.py",
-      "size": 4516,
-      "git_blob_sha1": "9b5d7085b7793eafb557d3931a32a82d25f94636"
+      "size": 4582,
+      "git_blob_sha1": "7187e6eb8db82f8f3be7b2273dd51d9974b40a56"
     },
     {
       "path": "参考对比.md",
@@ -211,5 +211,5 @@
     "examples/重跑复核示例.xlsx",
     "examples/首次复核示例.xlsx"
   ],
-  "note": "v0.8.2改进明细页和表头候选定位，结果补齐实际来源位置；固定运行文件完整下载校验后使用，预生成xlsx由脚本本地生成。测试与GitHub管理文件无需安装。"
+  "note": "v0.8.3修复仅给表头行时短说明页误报，隐藏历史候选须明确确认；固定运行文件完整下载校验后使用，预生成xlsx由脚本本地生成。测试与GitHub管理文件无需安装。"
 }
