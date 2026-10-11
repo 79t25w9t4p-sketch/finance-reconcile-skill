@@ -4,7 +4,7 @@
 
 给刚开始独立负责客户月末对账、不会写代码的商贸公司财务助理准备。把我方明细与客户明细交给本地 AI 助手，确认对应方式，得到**内部复核表＋待核实跟进清单**。下次换表时复用规则，内容没变的处理意见可以沿用。
 
-[先看输出](examples/月末客户对账/跟进清单.xlsx) · [新手跟着做一次](docs/新手第一次使用.md) · [下载完整目录](https://github.com/79t25w9t4p-sketch/finance-reconcile-skill/archive/refs/heads/main.zip)
+[复制给 Agent 开始使用](#复制这段话交给-codex) · [先看输出](examples/月末客户对账/跟进清单.xlsx) · [新手教程](docs/新手第一次使用.md)
 
 > 当前 v0.7.0，提供 Codex 本地使用流程，需要一次环境准备。演示均为虚构数据；尚无真实用户节省时间的测量。适合的是有共同单号、同一金额口径的明细核对。
 
@@ -48,20 +48,36 @@
 
 当前教程针对能够读取本地文件、执行脚本的 **Codex**。只粘贴一段提示词，不会让普通聊天窗口自动获得本机脚本能力。项目开源；AI宿主及运行环境另行准备。
 
-### 第一次：先试示例，不必先手动安装 Skill
+### 复制这段话交给 Codex
 
-1. 下载上面的完整 ZIP，解压；在 Codex 中选这个解压目录作为工作目录。
-2. 复制下面的话。助手先检查现有环境，再运行虚构示例。
+不用自己下载、解压或拼命令。把下面整段话复制给能联网、读取本地文件并执行脚本的 Codex，让它获取仓库并带你完成首次试用。其他 Agent 的本地执行与技能安装方式需要按其宿主确认，当前没有逐一验证。
 
-> 请阅读这个目录的 SKILL.md。我第一次用这个对账助手，先检查现有环境，再运行月末客户对账示例，把内部复核表和跟进清单交给我，并带我看 SH-002。若缺依赖，告诉我缺什么、准备装在哪里；不要直接修改系统环境。先不读取我的真实文件。
+```text
+帮我从这个 GitHub 仓库获取并试用客户对账 Skill：
+https://github.com/79t25w9t4p-sketch/finance-reconcile-skill
 
-完整步骤、常见卡点和换成自己文件的说法见 [新手第一次使用](docs/新手第一次使用.md)。
+1. 获取完整仓库到本任务的新目录，保留 SKILL.md、scripts、examples 及必要说明；不要只读取网页或单个 SKILL.md。GitHub 获取失败时，读取 https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口.md ，按其中列出的 jsDelivr 备用文件源和 agent-manifest.json 获取完整运行文件并校验，不混用不同版本；示例 Excel 由脚本在本地生成。
+2. 阅读技能说明和相关脚本，检查现有 Python、Node 与 openpyxl。优先复用已有环境；如果仅缺 Python 库，允许在本项目独立虚拟环境中安装 requirements.txt。缺 Python 或 Node 时先说明缺项及安装方式，不直接修改系统环境。
+3. 按 SKILL.md 运行月末客户对账虚构示例，交给我复核工作簿和跟进清单，带我看 SH-002。先不读取真实业务文件。
+4. 试用成功后，把完整技能文件安装到 Codex 用户技能目录 ~/.agents/skills/finance-reconcile，不复制 .git 和临时虚拟环境。已有同名目录时先说明，不覆盖其他技能。
+5. 告诉我安装位置、获取来源、代码版本、实际运行是否成功、以后怎么调用。两条来源都失败时报告具体卡点，不自行换未列出的第三方来源，也不要把未运行的结果说成成功。
+```
 
-### 以后：把整个目录交给助手安装一次
+能否获取文件取决于 Agent 所在环境的网络。GitHub 是项目主入口；备用文件源从这个公开仓库取文件，不是另一个独立维护的产品。安装流程仍需环境准备，缺项由助手具体说明。完整步骤和换成自己文件的说法见 [新手第一次使用](docs/新手第一次使用.md)。
 
-试用成功后，把完整目录放到 `~/.agents/skills/finance-reconcile/`，该目录内直接包含 `SKILL.md`、`scripts/` 和 `examples/`。Windows 对应用户目录下的 `.agents\skills\finance-reconcile`。不要覆盖其他技能；已有同名版本先说明再更新。[官方本地技能目录说明](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills)。
+### GitHub 页面打不开，也可以把入口交给 Agent
 
-安装后可以说：
+复制下面这一句给能联网、读写文件并执行脚本的 Agent：
+
+```text
+请按这个入口获取客户对账 Skill、检查环境并运行虚构示例；成功后安装到当前宿主支持的技能目录，说明实际结果和以后怎么调用：https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口.md
+```
+
+[Agent 接入说明](docs/Agent入口.md)包括固定代码版本、运行文件清单和校验要求。已安装后直接调用，无需每次重新获取。备用源按[jsDelivr 官方 GitHub 文件规则](https://github.com/jsdelivr/jsdelivr#github)工作，有缓存；不承诺所有国内网络可达。预生成 Excel 未列入备用下载清单，首次试用由脚本重新生成。网页可读、文件可下载和脚本可运行是三个不同环节；这不是一个远程对账 API。
+
+### 安装后，直接说要做什么
+
+用户技能目录内应直接包含 `SKILL.md`、`scripts/` 和 `examples/`。Windows 对应用户目录下的 `.agents\skills\finance-reconcile`。技能未被发现时检查层级，再按[官方本地技能目录说明](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills)处理。
 
 > 使用 $finance-reconcile。左表是我方明细，右表是客户发来的明细。这次只核对同一客户、2026年9月、人民币的逐单含税金额。请先建议共同单号和金额列，确认后给我复核表与跟进清单，并保存规则。
 
