@@ -17,7 +17,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.hyperlink import Hyperlink
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '0.8.6'
+VERSION = '0.8.7'
 HEADERS = ['编号 / 联合键', '核对结果', '本次变化', '处理状态', '处理意见', '左表来源行', '右表来源行', '左表原金额', '右表原金额', '左减右差额', '记录标识', '内容指纹']
 STATES = {'待处理', '处理中', '已解决', '需重新复核', '无需处理'}
 

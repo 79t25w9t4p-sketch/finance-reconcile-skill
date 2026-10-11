@@ -160,6 +160,31 @@ class Preparation(unittest.TestCase):
                 self.apply(path, Path(folder) / 'copy')
             self.assertFalse((Path(folder) / 'copy').exists())
 
+    def test_windows_text_writer_translation_preserves_original_newline_bytes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); path = root / 'source.csv'; out = root / 'copy'
+            path.write_bytes('编号,金额,备注\nA,10,"一\n二\r\n三\r四"\n合计,10,\n'.encode('utf-8'))
+            # Exercise et_xmlfile's actual filename writer, emulating Windows translation.
+            code = '''
+import contextlib,json,sys
+sys.path.insert(0,sys.argv[1])
+from et_xmlfile import incremental_tree
+original=incremental_tree._get_writer
+@contextlib.contextmanager
+def windows_writer(file,encoding):
+    with original(file,encoding) as (write,declared):
+        yield (lambda value:write(value.replace('\\n','\\r\\n'))) if isinstance(file,str) else write,declared
+incremental_tree._get_writer=windows_writer
+import prepare
+print(json.dumps(prepare.prepare(sys.argv[2],expected_sha256=sys.argv[3],exclude_rows=[3],
+    confirmed=True,reason='模拟确认汇总',out=sys.argv[4])))
+'''
+            result = subprocess.run([sys.executable, '-c', code, str(ROOT / 'scripts'), str(path), fingerprint(path), str(out)],
+                                    capture_output=True, text=True, env={**os.environ, 'OPENPYXL_LXML': 'False'})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            table, _ = load_table(out / '核对副本.xlsx')
+            self.assertEqual(table['rows'], [['A', '10', '一\n二\r\n三\r四']])
+
     def test_source_change_during_preparation_leaves_no_copy(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'source.csv'

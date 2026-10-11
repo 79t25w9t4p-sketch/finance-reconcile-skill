@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 import zipfile
 
 import openpyxl
@@ -14,18 +15,34 @@ from suggest import data_warnings
 from workflow import text_cell
 
 
-def preserve_carriage_returns(path):
-    """Escape literal CRs so XML readers preserve values with either writer backend."""
+def preserve_multiline_values(path, values):
+    """Restore original multiline values and serialize bytes without OS newline changes."""
+    if not values:
+        return
     sheet_xml = 'xl/worksheets/sheet1.xml'
+    namespace = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
     fixed = path.with_name('.literal-newlines.xlsx')
     with zipfile.ZipFile(path) as original:
-        if b'\r' not in original.read(sheet_xml):
-            return
+        tree = ET.fromstring(original.read(sheet_xml))
+        written = set()
+        for cell in tree.iter(namespace + 'c'):
+            coordinate = cell.get('r')
+            if coordinate in values:
+                text = cell.find(namespace + 'is/' + namespace + 't')
+                if text is None:
+                    raise ValueError('多行文本单元格结构不一致，停止输出')
+                text.text = values[coordinate]
+                written.add(coordinate)
+        if written != set(values):
+            raise ValueError('多行文本位置缺失，停止输出')
+        # Binary XML serialization avoids Windows text-file LF-to-CRLF translation.
+        # Character references keep original CRs from XML newline normalization.
+        xml = ET.tostring(tree, encoding='utf-8').replace(b'\r', b'&#13;')
         with zipfile.ZipFile(fixed, 'w') as replacement:
             for member in original.infolist():
                 value = original.read(member.filename)
                 if member.filename == sheet_xml:
-                    value = value.replace(b'\r', b'&#13;')
+                    value = xml
                 replacement.writestr(member, value)
     fixed.replace(path)
 
@@ -81,16 +98,18 @@ def prepare(file, sheet=None, header_row='1', *, expected_sha256=None, exclude_r
         try:
             worksheet = workbook.active
             worksheet.title = copy_sheet
-            for col, value in enumerate(table['headers'], 1):
-                text_cell(worksheet.cell(metadata['headerRow'], col), value)
-            for row_number, row in retained:
+            multiline_values = {}
+            for row_number, row in [(metadata['headerRow'], table['headers'])] + retained:
                 for col, value in enumerate(row, 1):
-                    text_cell(worksheet.cell(row_number, col), value)
+                    cell = worksheet.cell(row_number, col)
+                    text_cell(cell, value)
+                    if '\r' in value or '\n' in value:
+                        multiline_values[cell.coordinate] = value
             worksheet.freeze_panes = 'A' + str(metadata['headerRow'] + 1)
             workbook.save(copy_path)
         finally:
             workbook.close()
-        preserve_carriage_returns(copy_path)
+        preserve_multiline_values(copy_path, multiline_values)
         # Re-read before publishing: reject any lossy conversion or unreadable copy.
         check, copy_metadata = load_table(copy_path, copy_sheet, str(metadata['headerRow']))
         if (check['headers'] != table['headers'] or check['rows'] != [row for _, row in retained]

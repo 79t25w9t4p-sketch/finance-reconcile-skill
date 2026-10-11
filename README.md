@@ -6,7 +6,7 @@
 
 [![自动测试](https://github.com/79t25w9t4p-sketch/finance-reconcile-skill/actions/workflows/tests.yml/badge.svg)](https://github.com/79t25w9t4p-sketch/finance-reconcile-skill/actions/workflows/tests.yml)
 
-当前 **v0.8.6 可在确认后自动制作核对副本**，处理合计、小计和重复表头，保留原文件与业务来源位置。需要能读写本地文件、执行 Python 的 Agent，以及 Python 3.9+、openpyxl。教程提供 Codex 路径；普通聊天窗口不能直接执行。演示均为虚构数据，尚无真实用户节省时间的测量。
+当前 **v0.8.7 可在确认后自动制作核对副本**，处理合计、小计和重复表头，保留原文件与业务来源位置。需要能读写本地文件、执行 Python 的 Agent，以及 Python 3.9+、openpyxl。教程提供 Codex 路径；普通聊天窗口不能直接执行。演示均为虚构数据，尚无真实用户节省时间的测量。
 
 ## 先看是否适合你的两份表
 
@@ -20,7 +20,7 @@
 
 ```text
 请按这个入口获取并试用客户对账 Skill；已经安装则直接使用：
-https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.6.md
+https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.7.md
 
 我方文件：「文件路径」；客户文件：「文件路径」。
 本次比较「客户、期间、币种」下的「含税或未税金额」。
@@ -36,7 +36,7 @@ https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/
 
 ```text
 请按这个入口运行客户对账的虚构示例，交给我复核表和跟进清单，先不安装到用户技能目录：
-https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.6.md
+https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.7.md
 缺少必需Python库时，允许仅在本项目独立环境准备；缺Python先说明方案。
 ```
 
