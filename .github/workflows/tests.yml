@@ -17,3 +17,4 @@ jobs:
       - run: node --test tests/*.test.cjs
       - run: python tests/test_integration.py
       - run: python tests/test_workflow.py
+      - run: python tests/test_suggest.py

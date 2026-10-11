@@ -30,6 +30,7 @@ class Workflow(unittest.TestCase):
             wb=openpyxl.load_workbook(d/'second/复核工作簿.xlsx');rows={row[0].value:row for row in list(wb['待处理'])[1:]}
             self.assertEqual(rows['A'][2].value,'未变化');self.assertEqual(rows['A'][3].value,'已解决');self.assertEqual(rows['A'][4].value,'=原始意见');self.assertEqual(rows['A'][4].data_type,'s')
             self.assertEqual(rows['B'][3].value,'需重新复核');self.assertEqual(rows['C'][3].value,'需重新复核');self.assertEqual(rows['E'][2].value,'新增')
+            self.assertEqual(wb['汇总']['B2'].value,3);self.assertEqual(wb['汇总']['B3'].value,2);self.assertEqual(wb['汇总']['B4'].value,1);self.assertEqual(wb['汇总']['B5'].value,1);self.assertEqual(wb['待处理']['A2'].value,'B');
             self.assertEqual(wb['历史记录']['A2'].value,'D');self.assertEqual(wb['历史记录']['E2'].value,'=原始意见')
             self.assertTrue(wb['待处理'].auto_filter.ref);self.assertEqual(wb['待处理'].freeze_panes,'F2');self.assertEqual(len(wb['待处理'].data_validations.dataValidation),1)
             right.write_text('编号,余额,说明\nA,9,说明',encoding='utf8')

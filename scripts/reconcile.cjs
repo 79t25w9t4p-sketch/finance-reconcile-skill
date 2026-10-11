@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const R=require('./core.cjs');
 const crypto=require('node:crypto');
-const VERSION='0.5.0';
+const VERSION='0.6.0';
 function fingerprint(file){return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');}
 function main(){
  const opts={};const argv=process.argv.slice(2);

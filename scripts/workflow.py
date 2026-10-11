@@ -15,7 +15,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '0.5.0'
+VERSION = '0.6.0'
 HEADERS = ['编号 / 联合键', '核对结果', '本次变化', '处理状态', '处理意见', '左表来源行', '右表来源行', '左表原金额', '右表原金额', '左减右差额', '记录标识', '内容指纹']
 STATES = {'待处理', '处理中', '已解决', '需重新复核', '无需处理'}
 
@@ -150,14 +150,26 @@ def build_workbook(report, summary, profile, previous_path, dest):
             history.append(old)
     if len(history) > 10000:
         raise ValueError('历史记录超过10000条，请另存归档后开始新周期')
+    priority = {'需重新复核': 0, '待处理': 1, '处理中': 2, '已解决': 3, '无需处理': 4}
+    rows.sort(key=lambda r: (priority[r[3]], 0 if r[2] == '新增' else 1, r[0]))
+    attention = sum(row[3] in {'需重新复核', '待处理', '处理中'} for row in rows)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = '汇总'
-    overview = [['财务明细复核', VERSION], ['左表记录数', summary['leftRows']],
+    overview = [['基础对账 · 先看需要处理的事项', VERSION],
+                ['本次待办', attention], ['需重新复核', sum(row[3] == '需重新复核' for row in rows)],
+                ['新增待办', sum(row[2] == '新增' and row[3] != '无需处理' for row in rows)],
+                ['意见沿用', sum(row[2] == '未变化' and bool(row[4]) for row in rows)],
+                ['下一步', '打开待处理页；优先看需重新复核和新增条目，在黄色列填写状态和意见。'],
+                ['统计口径', '生成时统计；手动修改处理状态后，汇总数字不实时更新，下次重跑重新统计。'],
+                ['左表记录数', summary['leftRows']],
                 ['右表记录数', summary['rightRows']], ['左表金额合计', summary['leftTotal']],
-                ['右表金额合计', summary['rightTotal']], ['使用方式', '在黄色列填写处理状态和意见；下次将此工作簿作为上次结果。'],
+                ['右表金额合计', summary['rightTotal']], ['使用方式', '填写黄色列；已解决记录仍保留，可用处理状态筛选。下次把填写过的工作簿交给AI。'],
                 ['重跑规则', '内容未变化才沿用状态；变化时保留意见并要求重新复核。'],
                 ['历史记录', '本次未出现仅代表不在本次输入中，不代表问题已解决。']]
+    overview += [['金额差异怎么查', '对照左右金额和来源行回查单据，不自动断言差额原因。'],
+                 ['单边记录怎么查', '核实遗漏、期间和编号口径。'],
+                 ['重复 / 无效值怎么查', '先确认明细粒度与原始数据，再重新核对。']]
     overview += list(summary['counts'].items()) + list(changes.items())
     for row in overview:
         ws.append(row)
@@ -166,7 +178,15 @@ def build_workbook(report, summary, profile, previous_path, dest):
     for row in ws:
         for c in row:
             c.alignment = Alignment(wrap_text=True, vertical='top')
-    ws['A1'].font = Font(size=18, bold=True, color='17365D')
+    ws['A1'].font = Font(size=16, bold=True, color='17365D')
+    ws.column_dimensions['A'].width = 38
+    ws.freeze_panes = 'B2'
+    ws.row_dimensions[1].height = 30
+    for number in range(2, 6):
+        ws.cell(number, 2).font = Font(size=16, bold=True, color='17365D')
+        ws.cell(number, 2).fill = PatternFill('solid', fgColor='E8F1FA')
+    for number in range(6, ws.max_row + 1):
+        ws.row_dimensions[number].height = 32
     make_sheet(wb, '待处理', [r for r in rows if r[1] != '一致' or r[3] == '需重新复核'])
     make_sheet(wb, '已匹配', [r for r in rows if r[1] == '一致' and r[3] != '需重新复核'])
     make_sheet(wb, '历史记录', history)
