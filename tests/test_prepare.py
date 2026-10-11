@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -123,7 +124,7 @@ class Preparation(unittest.TestCase):
                         '合计' + delimiter + '30' + delimiter,
                         '=TEXT-ID' + delimiter + '20' + delimiter + '"=HYPERLINK(""fake"")"']
                 # A quoted formula-like value is input text; it must stay text in XLSX.
-                path.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+                path.write_bytes(('\n'.join(rows) + '\n').encode('utf-8'))
                 out = Path(folder) / suffix
                 self.apply(path, out)
                 table, _ = load_table(out / '核对副本.xlsx')
@@ -135,6 +136,21 @@ class Preparation(unittest.TestCase):
                 wb = openpyxl.load_workbook(out / '核对副本.xlsx')
                 self.assertFalse(any(c.data_type == 'f' for row in wb.active for c in row))
                 wb.close()
+
+    def test_crlf_and_cr_text_survive_without_optional_lxml(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); path = root / 'source.csv'; out = root / 'copy'
+            path.write_bytes('编号,金额,备注\r\nA,10,"一\r\n二\r三\n四"\r\n合计,10,\r\n'.encode('utf-8'))
+            before = fingerprint(path)
+            result = subprocess.run([sys.executable, str(ROOT / 'scripts/prepare.py'), '--input', str(path),
+                                     '--expect-sha256', before, '--exclude-rows', '[3]', '--confirmed',
+                                     '--reason', '模拟确认：第3行汇总', '--out', str(out)],
+                                    capture_output=True, text=True, env={**os.environ, 'OPENPYXL_LXML': 'False'})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            table, _ = load_table(out / '核对副本.xlsx')
+            self.assertEqual(table['rows'], [['A', '10', '一\r\n二\r三\n四']])
+            self.assertEqual(table['sourceLines'], [2])
+            self.assertEqual(fingerprint(path), before)
 
     def test_formula_source_cannot_be_cleaned_away(self):
         with tempfile.TemporaryDirectory() as folder:

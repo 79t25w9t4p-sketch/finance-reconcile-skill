@@ -6,11 +6,28 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+import zipfile
 
 import openpyxl
 from reconcile import fingerprint, load_table
 from suggest import data_warnings
 from workflow import text_cell
+
+
+def preserve_carriage_returns(path):
+    """Escape literal CRs so XML readers preserve values with either writer backend."""
+    sheet_xml = 'xl/worksheets/sheet1.xml'
+    fixed = path.with_name('.literal-newlines.xlsx')
+    with zipfile.ZipFile(path) as original:
+        if b'\r' not in original.read(sheet_xml):
+            return
+        with zipfile.ZipFile(fixed, 'w') as replacement:
+            for member in original.infolist():
+                value = original.read(member.filename)
+                if member.filename == sheet_xml:
+                    value = value.replace(b'\r', b'&#13;')
+                replacement.writestr(member, value)
+    fixed.replace(path)
 
 
 def prepare(file, sheet=None, header_row='1', *, expected_sha256=None, exclude_rows=None,
@@ -73,6 +90,7 @@ def prepare(file, sheet=None, header_row='1', *, expected_sha256=None, exclude_r
             workbook.save(copy_path)
         finally:
             workbook.close()
+        preserve_carriage_returns(copy_path)
         # Re-read before publishing: reject any lossy conversion or unreadable copy.
         check, copy_metadata = load_table(copy_path, copy_sheet, str(metadata['headerRow']))
         if (check['headers'] != table['headers'] or check['rows'] != [row for _, row in retained]
