@@ -2,9 +2,8 @@
 """Propose field mappings from headers only; never guess between candidates."""
 import argparse
 import json
-from pathlib import Path
-import subprocess
 import sys
+from reconcile import load_table
 
 ALIASES = {
     'reference': {'编号', '单号', '单据号', '单据编号', '业务单号', '订单号', '订单编号', '送货单号', '送货单编号', '供方送货单号', '供应商送货单号', '发票号', '发票号码', '凭证号', '凭证编号', '流水号', '交易流水号', '交易编号', 'reference', 'reference_id', 'invoice_id', 'order_id'},
@@ -62,17 +61,13 @@ def main():
     parser = argparse.ArgumentParser(description='识别常见编号、金额、客户和公司列，提出核对建议')
     for option in ['left', 'right']:
         parser.add_argument('--'+option, required=True)
-    for option in ['left-sheet', 'right-sheet', 'left-header-row', 'right-header-row', 'node']:
+    for option in ['left-sheet', 'right-sheet', 'left-header-row', 'right-header-row']:
         parser.add_argument('--'+option)
     args = vars(parser.parse_args())
-    command = [args['node'] or 'node', str(Path(__file__).with_name('reconcile.cjs')), '--inspect', '--python', sys.executable]
-    for key, value in args.items():
-        if key != 'node' and value is not None:
-            command += ['--'+key.replace('_', '-'), value]
-    result = subprocess.run(command, capture_output=True, text=True, timeout=60)
-    if result.returncode:
-        raise ValueError(result.stderr.strip())
-    inspection = json.loads(result.stdout)
+    inspection = {}
+    for side in ['left', 'right']:
+        table, _ = load_table(args[side], args[side+'_sheet'], args[side+'_header_row'] or '1')
+        inspection[side] = {'headers': table['headers'], 'rows': len(table['rows'])}
     proposal = propose(inspection['left']['headers'], inspection['right']['headers'])
     proposal['inputOverview'] = inspection
     print(json.dumps(proposal, ensure_ascii=False, indent=2))

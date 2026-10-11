@@ -3,12 +3,10 @@
 import argparse
 import json
 from pathlib import Path
-import re
-import subprocess
 import sys
 
 
-def check_environment(node='node'):
+def check_environment():
     checks = []
     python_ok = sys.version_info >= (3, 9)
     checks.append({'name': 'Python', 'ok': python_ok,
@@ -24,18 +22,10 @@ def check_environment(node='node'):
         excel_ok, detail = False, '当前 Python 缺少可用的 openpyxl（>=3.1,<4）'
     checks.append({'name': 'Excel 读写组件', 'ok': excel_ok, 'detail': detail,
                    'next': '' if excel_ok else '使用运行此检查的同一个 Python，在隔离环境安装 requirements.txt；先说明安装位置。'})
-    try:
-        result = subprocess.run([node, '--version'], capture_output=True, text=True, timeout=5)
-        match = re.fullmatch(r'v(\d+)\.\d+\.\d+', result.stdout.strip())
-        node_ok = result.returncode == 0 and match is not None and int(match[1]) >= 18
-        node_detail = result.stdout.strip() if match else '无法确认 Node 版本'
-    except (OSError, subprocess.TimeoutExpired):
-        node_ok, node_detail = False, '未找到可运行的 Node'
-    checks.append({'name': '核对运行组件', 'ok': node_ok, 'detail': node_detail,
-                   'next': '' if node_ok else '需要 Node 18 或以上；已有但不在 PATH 时，把路径传给 --node。'})
     root = Path(__file__).resolve().parents[1]
-    required = ['SKILL.md', 'scripts/workflow.py', 'scripts/reconcile.cjs',
-                'scripts/core.cjs', 'scripts/xlsx_read.py', 'scripts/suggest.py']
+    required = ['SKILL.md', 'scripts/workflow.py', 'scripts/reconcile.py',
+                'scripts/core.py', 'scripts/xlsx_read.py', 'scripts/suggest.py',
+                'requirements.txt', 'examples/month_end_demo.py']
     missing = [name for name in required if not (root/name).is_file()]
     checks.append({'name': '完整技能目录', 'ok': not missing,
                    'detail': '完整' if not missing else '缺少：'+'、'.join(missing),
@@ -47,10 +37,9 @@ def check_environment(node='node'):
 
 def main():
     parser = argparse.ArgumentParser(description='检查能否运行对账示例；只检查，不安装')
-    parser.add_argument('--node', default='node')
     parser.add_argument('--json', action='store_true')
     args = parser.parse_args()
-    report = check_environment(args.node)
+    report = check_environment()
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:

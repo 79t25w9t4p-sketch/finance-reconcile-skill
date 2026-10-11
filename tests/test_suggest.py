@@ -1,12 +1,12 @@
 import importlib.util
 from pathlib import Path
 import json
-import os
 import subprocess
 import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts'))
 spec = importlib.util.spec_from_file_location('suggest', ROOT/'scripts/suggest.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -42,7 +42,7 @@ class Suggestions(unittest.TestCase):
         self.assertEqual(p['status'],'needs_field_choice')
         self.assertEqual(p['mapping'],{})
     def test_cli_is_read_only_and_does_not_print_detail(self):
-        result=subprocess.run([sys.executable,str(ROOT/'scripts/suggest.py'),'--left',str(ROOT/'examples/左表.csv'),'--right',str(ROOT/'examples/右表.csv'),'--node',os.environ.get('NODE','node')],capture_output=True,text=True)
+        result=subprocess.run([sys.executable,str(ROOT/'scripts/suggest.py'),'--left',str(ROOT/'examples/左表.csv'),'--right',str(ROOT/'examples/右表.csv')],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
         p=json.loads(result.stdout);self.assertEqual(p['inputOverview']['left']['rows'],7)
         self.assertNotIn('AR001',result.stdout)

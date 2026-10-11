@@ -54,9 +54,8 @@ def write_input(path, headers, rows):
 def main():
     parser = argparse.ArgumentParser(description='用虚构月末客户明细生成首次复核与跟进清单')
     parser.add_argument('out', help='新的演示目录，不覆盖已有文件')
-    parser.add_argument('--node', default='node')
     args = parser.parse_args()
-    report = check_environment(args.node)
+    report = check_environment()
     if not report['ready']:
         for item in report['checks']:
             if not item['ok']:
@@ -72,7 +71,7 @@ def main():
         right = stage/'模拟_客户采购明细.xlsx'
         write_input(left, ['送货单号', '含税金额', '说明'], LEFT)
         write_input(right, ['供方送货单号', '含税金额', '说明'], RIGHT)
-        command = [sys.executable, str(ROOT/'scripts/workflow.py'), '--node', args.node,
+        command = [sys.executable, str(ROOT/'scripts/workflow.py'),
                    '--left', str(left), '--right', str(right),
                    '--left-keys', '["送货单号"]', '--right-keys', '["供方送货单号"]',
                    '--left-amount', '含税金额', '--right-amount', '含税金额',

@@ -8,14 +8,14 @@ import subprocess
 import sys
 import tempfile
 import zipfile
-from decimal import Decimal
+from core import fmt
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '0.7.0'
+VERSION = '0.8.0'
 HEADERS = ['编号 / 联合键', '核对结果', '本次变化', '处理状态', '处理意见', '左表来源行', '右表来源行', '左表原金额', '右表原金额', '左减右差额', '记录标识', '内容指纹']
 STATES = {'待处理', '处理中', '已解决', '需重新复核', '无需处理'}
 
@@ -199,7 +199,7 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
                ' / '.join(str(x['line']) for x in item['right']),
                ' / '.join(x['raw'] for x in item['left']),
                ' / '.join(x['raw'] for x in item['right']),
-               '待核实' if item['delta'] is None else format(Decimal(item['delta']) / Decimal(100), '.2f'),
+               '待核实' if item['delta'] is None else fmt(int(item['delta']), grouping=False),
                identity, fingerprint]
         rows.append(row)
     for identity, old in previous.items():
@@ -259,7 +259,7 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
 
 def main():
     parser = argparse.ArgumentParser(description='保存核对配置，换表重跑，输出可填写复核意见的Excel')
-    for name in ['config', 'save-config', 'left', 'right', 'out', 'previous', 'node', 'left-keys', 'right-keys', 'left-amount', 'right-amount', 'left-sheet', 'right-sheet', 'left-header-row', 'right-header-row']:
+    for name in ['config', 'save-config', 'left', 'right', 'out', 'previous', 'left-keys', 'right-keys', 'left-amount', 'right-amount', 'left-sheet', 'right-sheet', 'left-header-row', 'right-header-row']:
         parser.add_argument('--'+name)
     parser.add_argument('--single-key-confirmed', action='store_true')
     args = vars(parser.parse_args())
@@ -280,7 +280,7 @@ def main():
         if Path(args['save_config']).exists():
             raise ValueError('配置文件已存在，请复用或另起名称')
         mapping = {k: args[k] for k in fields if args[k]}
-    cli = [args['node'] or 'node', str(ROOT/'reconcile.cjs'), '--left', args['left'], '--right', args['right'], '--python', sys.executable]
+    cli = [sys.executable, '-X', 'utf8', str(ROOT/'reconcile.py'), '--left', args['left'], '--right', args['right']]
     for key, value in mapping.items():
         if key == 'single_key_confirmed':
             if value is True: cli.append('--single-key-confirmed')
@@ -289,7 +289,7 @@ def main():
         else:
             raise ValueError('配置字段类型无效')
     def execute(extra):
-        result = subprocess.run(cli + extra, capture_output=True, text=True, timeout=60)
+        result = subprocess.run(cli + extra, capture_output=True, text=True, encoding='utf-8', timeout=60)
         if result.returncode:
             raise ValueError(result.stderr.strip())
         return json.loads(result.stdout)

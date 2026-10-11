@@ -4,19 +4,18 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: '1'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
       - run: python -m pip install -r requirements.txt
-      - run: node --test tests/*.test.cjs
-      - run: python tests/test_integration.py
-      - run: python tests/test_workflow.py
-      - run: python tests/test_suggest.py
+      - run: python -m unittest discover -s tests -p "test_*.py"
       - run: python scripts/doctor.py
-      - run: python examples/month_end_demo.py "$RUNNER_TEMP/month-end-demo"
+      - run: python examples/month_end_demo.py demo-output

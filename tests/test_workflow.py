@@ -15,7 +15,7 @@ class Workflow(unittest.TestCase):
             d=Path(folder);left=d/'left.csv';right=d/'right.csv';config=d/'config.json'
             left.write_text('编号,金额\n=单据,10',encoding='utf8')
             right.write_text('编号,金额\n=单据,9',encoding='utf8')
-            base=[sys.executable,str(ROOT/'scripts/workflow.py'),'--node',os.environ.get('NODE','node'),'--left',str(left),'--right',str(right)]
+            base=[sys.executable,str(ROOT/'scripts/workflow.py'),'--left',str(left),'--right',str(right)]
             result=subprocess.run(base+['--save-config',str(config),'--left-keys','["编号"]','--right-keys','["编号"]','--left-amount','金额','--right-amount','金额','--out',str(d/'first')],capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
             followup=openpyxl.load_workbook(d/'first/跟进清单.xlsx')
@@ -33,7 +33,7 @@ class Workflow(unittest.TestCase):
             left.write_text('编号,金额,说明\nA,10,说明\nB,20,说明\nC,30,说明\nD,40,说明',encoding='utf8')
             right.write_text('编号,金额,说明\nA,9,说明\nB,19,说明\nC,29,说明\nD,39,说明',encoding='utf8')
             def run(out,*extra):
-                return subprocess.run([sys.executable,str(ROOT/'scripts/workflow.py'),'--node',os.environ.get('NODE','node'),'--left',str(left),'--right',str(right),'--out',str(d/out),*map(str,extra)],capture_output=True,text=True)
+                return subprocess.run([sys.executable,str(ROOT/'scripts/workflow.py'),'--left',str(left),'--right',str(right),'--out',str(d/out),*map(str,extra)],capture_output=True,text=True)
             r=run('first','--save-config',config,'--left-keys','["编号"]','--right-keys','["编号"]','--left-amount','金额','--right-amount','金额');self.assertEqual(r.returncode,0,r.stderr)
             saved=json.loads(config.read_text());self.assertNotIn(str(d),config.read_text())
             previous=d/'first/复核工作簿.xlsx';wb=openpyxl.load_workbook(previous);ws=wb['待处理']
@@ -65,7 +65,7 @@ class Workflow(unittest.TestCase):
     def test_invalid_previous_leaves_no_partial_output(self):
         with tempfile.TemporaryDirectory() as folder:
             d=Path(folder);(d/'left.csv').write_text('编号,金额\nA,10');(d/'right.csv').write_text('编号,金额\nA,9');(d/'bad.xlsx').write_text('not a workbook')
-            r=subprocess.run([sys.executable,str(ROOT/'scripts/workflow.py'),'--node',os.environ.get('NODE','node'),'--left',str(d/'left.csv'),'--right',str(d/'right.csv'),'--out',str(d/'out'),'--save-config',str(d/'config.json'),'--left-keys','["编号"]','--right-keys','["编号"]','--left-amount','金额','--right-amount','金额','--previous',str(d/'bad.xlsx')],capture_output=True,text=True)
+            r=subprocess.run([sys.executable,str(ROOT/'scripts/workflow.py'),'--left',str(d/'left.csv'),'--right',str(d/'right.csv'),'--out',str(d/'out'),'--save-config',str(d/'config.json'),'--left-keys','["编号"]','--right-keys','["编号"]','--left-amount','金额','--right-amount','金额','--previous',str(d/'bad.xlsx')],capture_output=True,text=True)
             self.assertNotEqual(r.returncode,0);self.assertFalse((d/'out').exists());self.assertFalse((d/'config.json').exists())
 
 if __name__ == '__main__': unittest.main()
