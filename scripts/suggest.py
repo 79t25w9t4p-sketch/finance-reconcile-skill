@@ -2,8 +2,10 @@
 """Propose field mappings from headers only; never guess between candidates."""
 import argparse
 import json
+from pathlib import Path
+import subprocess
 import sys
-from reconcile import load_table
+from reconcile import fingerprint, load_table
 
 ALIASES = {
     'reference': {'编号', '单号', '单据号', '单据编号', '业务单号', '订单号', '订单编号', '送货单号', '送货单编号', '供方送货单号', '供应商送货单号', '发票号', '发票号码', '凭证号', '凭证编号', '流水号', '交易流水号', '交易编号', 'reference', 'reference_id', 'invoice_id', 'order_id'},
@@ -57,6 +59,34 @@ def propose(left, right):
     }
 
 
+def inspect_input(file, sheet=None, header_row=None):
+    """Find an unambiguous XLSX layout before the strict table reader runs."""
+    path=Path(file)
+    before=fingerprint(path,10*1024*1024)
+    layout=None
+    if path.suffix.lower()=='.xlsx' and not (sheet and header_row):
+        options={'sheet':sheet,'headerRow':header_row,
+                 'reference':sorted(ALIASES['reference']),'amount':sorted(ALIASES['amount'])}
+        result=subprocess.run([sys.executable,'-X','utf8',str(Path(__file__).with_name('xlsx_read.py')),
+                               '--layout',str(path),json.dumps(options,ensure_ascii=False)],
+                              capture_output=True,text=True,encoding='utf-8',timeout=30)
+        if result.returncode: raise ValueError(result.stderr.strip())
+        layout=json.loads(result.stdout)
+        if len(layout['candidates'])==1:
+            selected=layout['candidates'][0]
+            sheet,header_row=selected['sheet'],str(selected['headerRow'])
+        else:
+            if fingerprint(path,10*1024*1024)!=before: raise ValueError('检查过程中输入文件发生变化')
+            return {'file':path.name,**layout},None
+    table,metadata=load_table(path,sheet,header_row or '1')
+    if metadata['sha256']!=before: raise ValueError('检查过程中输入文件发生变化')
+    location={}
+    if metadata['sheet'] is not None:
+        location={'sheet':metadata['sheet'],'header_row':str(metadata['headerRow'])}
+    return {'file':path.name,'sheet':metadata['sheet'],'headerRow':metadata['headerRow'],
+            'headers':table['headers'],'rows':len(table['rows'])},location
+
+
 def main():
     parser = argparse.ArgumentParser(description='识别常见编号、金额、客户和公司列，提出核对建议')
     for option in ['left', 'right']:
@@ -65,10 +95,20 @@ def main():
         parser.add_argument('--'+option)
     args = vars(parser.parse_args())
     inspection = {}
+    locations={};choices=[]
     for side in ['left', 'right']:
-        table, _ = load_table(args[side], args[side+'_sheet'], args[side+'_header_row'] or '1')
-        inspection[side] = {'headers': table['headers'], 'rows': len(table['rows'])}
+        inspection[side],locations[side]=inspect_input(args[side],args[side+'_sheet'],args[side+'_header_row'])
+        if locations[side] is None:
+            choices.append({'side':side,'field':'table','candidates':inspection[side]['candidates'],
+                            'reason':'多个明细页/表头候选，请确认位置' if inspection[side]['candidates'] else
+                                     '未识别到包含常见编号和金额列的表头，请指定明细页及表头行；自定义列名可手动指定'})
+    if choices:
+        print(json.dumps({'status':'needs_table_choice','questions':choices,'inputOverview':inspection,
+                          'note':'仅检查工作表名称和表头候选，未执行核对。'},ensure_ascii=False,indent=2))
+        return
     proposal = propose(inspection['left']['headers'], inspection['right']['headers'])
+    for side,location in locations.items():
+        proposal['mapping'].update({side+'_'+key:value for key,value in location.items()})
     proposal['inputOverview'] = inspection
     print(json.dumps(proposal, ensure_ascii=False, indent=2))
 

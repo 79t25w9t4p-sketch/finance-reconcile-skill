@@ -17,7 +17,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.hyperlink import Hyperlink
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '0.8.0'
+VERSION = '0.8.2'
 HEADERS = ['编号 / 联合键', '核对结果', '本次变化', '处理状态', '处理意见', '左表来源行', '右表来源行', '左表原金额', '右表原金额', '左减右差额', '记录标识', '内容指纹']
 STATES = {'待处理', '处理中', '已解决', '需重新复核', '无需处理'}
 
@@ -113,7 +113,17 @@ def make_sheet(wb, name, rows):
     return ws
 
 
-def save_followup(rows, profile, input_names, dest):
+def source_locations(inputs):
+    rows=[]
+    for side,label in [('left','左表'),('right','右表')]:
+        source=inputs[side]
+        rows.extend([[label+'文件',source['file']],
+                     [label+'工作表',source['sheet'] if source['sheet'] is not None else 'CSV/TSV（无工作表）'],
+                     [label+'表头行',source['headerRow']]])
+    return rows
+
+
+def save_followup(rows, profile, inputs, dest):
     """Export unresolved items without internal review notes or hidden identifiers."""
     advice = {
         '金额差异': '请核对两边计价、含税口径及优惠/退货调整，并回查原单据。',
@@ -132,7 +142,7 @@ def save_followup(rows, profile, input_names, dest):
     info_rows = [
         ['待核实跟进清单', VERSION],
         ['用途', '列出生成时仍待处理的事项，供人工核实；不判定哪方错账。'],
-        ['左表文件', input_names['left']], ['右表文件', input_names['right']],
+        *source_locations(inputs),
         ['左表比较金额列', mapping['left_amount']], ['右表比较金额列', mapping['right_amount']],
         ['编号对应', '左：'+mapping['left_keys']+'；右：'+mapping['right_keys']],
         ['差额方向', '左表金额减右表金额；重复或异常不计算差额。'],
@@ -201,7 +211,7 @@ def make_focus(wb, rows, review_rows):
     return ws
 
 
-def build_workbook(report, summary, profile, previous_path, dest, input_names):
+def build_workbook(report, summary, profile, previous_path, dest, inputs):
     profile_hash = digest(profile)
     previous, history = read_previous(previous_path, profile_hash)
     rows = []
@@ -275,8 +285,10 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
                  ['已解决沿用', tasks['carriedResolved']], ['上次记录本次未出现', tasks['absent']],
                  ['意见填写位置', '只在待处理或已匹配页填写；本次重点为只读视图，避免两处意见不一致。']]
     overview += list(summary['counts'].items()) + list(changes.items())
-    for row in overview:
-        ws.append(row)
+    overview += source_locations(inputs)
+    for number,row in enumerate(overview,1):
+        for col,value in enumerate(row,1):
+            text_cell(ws.cell(number,col),value)
     ws.column_dimensions['A'].width = 25
     ws.column_dimensions['B'].width = 85
     for row in ws:
@@ -301,7 +313,7 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
     meta.append(['profile', profile_hash])
     meta.sheet_state = 'hidden'
     wb.save(dest)
-    save_followup(rows, profile, input_names, dest.with_name('跟进清单.xlsx'))
+    save_followup(rows, profile, inputs, dest.with_name('跟进清单.xlsx'))
     return changes, tasks
 
 
@@ -358,9 +370,8 @@ def main():
         manifest = read_json(stage/'运行清单.json')
         if any(manifest['inputs'][side]['sha256'] != input_hashes[side] for side in input_hashes):
             raise ValueError('检查表头后输入文件发生变化，请使用稳定的导出文件重新核对')
-        input_names = {side: manifest['inputs'][side]['file'] for side in ['left', 'right']}
         previous_hash = file_hash(args['previous'], 10 * 1024 * 1024) if args['previous'] else None
-        changes, tasks = build_workbook(read_json(stage/'核对记录.json'), summary, profile, args['previous'], stage/'复核工作簿.xlsx', input_names)
+        changes, tasks = build_workbook(read_json(stage/'核对记录.json'), summary, profile, args['previous'], stage/'复核工作簿.xlsx', manifest['inputs'])
         manifest['workflowVersion'] = VERSION
         manifest['profileSHA256'] = digest(profile)
         manifest['reviewChanges'] = changes

@@ -13,6 +13,36 @@ sys.path.insert(0,str(ROOT/'scripts'))
 import workflow as workflow_module
 
 class Workflow(unittest.TestCase):
+    def test_both_workbooks_show_actual_source_locations_as_literal_text(self):
+        with tempfile.TemporaryDirectory() as folder:
+            d=Path(folder);left=d/'=left.xlsx';right=d/'right.xlsx';config=d/'config.json'
+            for path,name,header,amount in [(left,'=销售明细',3,'10'),(right,'采购明细',1,'9')]:
+                wb=openpyxl.Workbook();ws=wb.active;ws.title=name
+                for _ in range(header-1):ws.append(['说明'])
+                ws.append(['编号','金额']);ws.append(['001',amount]);wb.save(path);wb.close()
+            base=[sys.executable,str(ROOT/'scripts/workflow.py'),'--left',str(left),'--right',str(right)]
+            result=subprocess.run(base+['--left-sheet','=销售明细','--left-header-row','3',
+                                       '--left-keys','["编号"]','--right-keys','["编号"]',
+                                       '--left-amount','金额','--right-amount','金额',
+                                       '--save-config',str(config),'--out',str(d/'first')],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            saved=config.read_bytes()
+            self.assertNotIn('right_sheet',json.loads(saved)['mapping'])
+            for file,sheet in [('复核工作簿.xlsx','汇总'),('跟进清单.xlsx','使用说明')]:
+                wb=openpyxl.load_workbook(d/'first'/file)
+                info=dict(wb[sheet].values)
+                self.assertEqual(info['左表文件'],'=left.xlsx')
+                self.assertEqual(info['左表工作表'],'=销售明细');self.assertEqual(str(info['左表表头行']),'3')
+                self.assertEqual(info['右表工作表'],'采购明细');self.assertEqual(str(info['右表表头行']),'1')
+                self.assertFalse(any(c.data_type=='f' for ws in wb for row in ws for c in row))
+                wb.close()
+            previous=d/'first/复核工作簿.xlsx'
+            wb=openpyxl.load_workbook(previous);wb['待处理']['D2']='已解决';wb['待处理']['E2']='核实过';wb.save(previous);wb.close()
+            result=subprocess.run(base+['--config',str(config),'--previous',str(previous),'--out',str(d/'second')],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertEqual(json.loads(result.stdout)['tasks']['carriedResolved'],1)
+            self.assertEqual(config.read_bytes(),saved)
+
     def test_source_change_between_inspection_and_report_leaves_no_output(self):
         with tempfile.TemporaryDirectory() as folder:
             d=Path(folder);left=d/'left.csv';right=d/'right.csv'

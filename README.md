@@ -6,7 +6,7 @@
 
 [![自动测试](https://github.com/79t25w9t4p-sketch/finance-reconcile-skill/actions/workflows/tests.yml/badge.svg)](https://github.com/79t25w9t4p-sketch/finance-reconcile-skill/actions/workflows/tests.yml)
 
-当前 **v0.8.1 是使用流程修订，核对脚本未改**。需要能读写本地文件、执行 Python 的 Agent，以及 Python 3.9+、openpyxl。教程提供 Codex 路径；普通聊天窗口不能直接执行。演示均为虚构数据，尚无真实用户节省时间的测量。
+当前 **v0.8.2 改善明细页与表头定位，补齐原表回查位置**。需要能读写本地文件、执行 Python 的 Agent，以及 Python 3.9+、openpyxl。教程提供 Codex 路径；普通聊天窗口不能直接执行。演示均为虚构数据，尚无真实用户节省时间的测量。
 
 ## 先看是否适合你的两份表
 
@@ -20,7 +20,7 @@
 
 ```text
 请按这个入口获取并试用客户对账 Skill；已经安装则直接使用：
-https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.1.md
+https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.2.md
 
 我方文件：「文件路径」；客户文件：「文件路径」。
 本次比较「客户、期间、币种」下的「含税或未税金额」。
@@ -36,7 +36,7 @@ https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/
 
 ```text
 请按这个入口运行客户对账的虚构示例，交给我复核表和跟进清单，先不安装到用户技能目录：
-https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.1.md
+https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.2.md
 缺少必需Python库时，允许仅在本项目独立环境准备；缺Python先说明方案。
 ```
 
@@ -79,7 +79,7 @@ python3 examples/month_end_demo.py 新的演示目录
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-脚本参数和复用方式见 [SKILL.md](SKILL.md)。XLSX可指定工作表和表头行。缺Python库时，优先在独立环境安装requirements.txt，安装和执行使用同一个解释器；缺Python时先说明，不直接修改系统环境。旧Node入口改为 `python scripts/reconcile.py`。
+脚本参数和复用方式见 [SKILL.md](SKILL.md)。首次检查XLSX各页前20行：唯一编号与金额表头候选才建议使用，多候选请确认；自定义列名或更晚的表头可显式指定。两份结果表列出原文件、工作表及表头行，结合来源行回查。缺Python库时，优先在独立环境安装requirements.txt，安装和执行使用同一个解释器；缺Python时先说明，不直接修改系统环境。旧Node入口改为 `python scripts/reconcile.py`。
 
 </details>
 
