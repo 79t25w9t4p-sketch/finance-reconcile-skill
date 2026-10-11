@@ -9,10 +9,12 @@ import sys
 import tempfile
 import zipfile
 from core import fmt
+from reconcile import fingerprint as file_hash
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.hyperlink import Hyperlink
 
 ROOT = Path(__file__).resolve().parent
 VERSION = '0.8.0'
@@ -169,6 +171,36 @@ def save_followup(rows, profile, input_names, dest):
     wb.save(dest)
 
 
+def make_focus(wb, rows, review_rows):
+    """Read-only view; links point to the single authoritative editable record."""
+    ws = wb.create_sheet('本次重点')
+    headers = ['编号 / 联合键', '核对结果', '本次变化', '处理状态', '上次处理意见',
+               '左表原金额', '右表原金额', '左减右差额', '处理入口']
+    for col, value in enumerate(headers, 1):
+        text_cell(ws.cell(1, col), value)
+        ws.cell(1, col).fill = PatternFill('solid', fgColor='17365D')
+        ws.cell(1, col).font = Font(bold=True, color='FFFFFF')
+    for number, row in enumerate(rows, 2):
+        values = [row[0], row[1], row[2], row[3], row[4], row[7], row[8], row[9], '填写状态与意见']
+        for col, value in enumerate(values, 1):
+            text_cell(ws.cell(number, col), value)
+            ws.cell(number, col).alignment = Alignment(wrap_text=True, vertical='top')
+        link = ws.cell(number, 9)
+        # Internal location only: https://openpyxl.readthedocs.io/en/stable/api/openpyxl.worksheet.hyperlink.html
+        link.hyperlink = Hyperlink(ref=link.coordinate, location=f"'待处理'!D{review_rows[row[10]]}", display=link.value)
+        link.style = 'Hyperlink'
+        ws.row_dimensions[number].height = 38
+    for col, width in enumerate([34, 18, 20, 18, 48, 22, 22, 20, 24], 1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
+    ws.freeze_panes = 'F2'
+    ws.auto_filter.ref = ws.dimensions
+    # Prevent accidental view edits; this is not encryption or access control.
+    # https://openpyxl.readthedocs.io/en/stable/protection.html
+    ws.protection.sheet = True
+    ws.protection.autoFilter = False
+    return ws
+
+
 def build_workbook(report, summary, profile, previous_path, dest, input_names):
     profile_hash = digest(profile)
     previous, history = read_previous(previous_path, profile_hash)
@@ -202,15 +234,26 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
                '待核实' if item['delta'] is None else fmt(int(item['delta']), grouping=False),
                identity, fingerprint]
         rows.append(row)
+    absent = 0
     for identity, old in previous.items():
         if identity not in seen:
             old[2] = '本次未出现'
             history.append(old)
+            absent += 1
     if len(history) > 10000:
         raise ValueError('历史记录超过10000条，请另存归档后开始新周期')
     priority = {'需重新复核': 0, '待处理': 1, '处理中': 2, '已解决': 3, '无需处理': 4}
     rows.sort(key=lambda r: (priority[r[3]], 0 if r[2] == '新增' else 1, r[0]))
     attention = sum(row[3] in {'需重新复核', '待处理', '处理中'} for row in rows)
+    pending_states = {'需重新复核', '待处理', '处理中'}
+    focus = [row for row in rows if row[3] in pending_states and row[2] != '未变化']
+    tasks = {'focus': len(focus), 'pending': attention,
+             'firstPending': sum(row[2] == '首次核对' and row[3] in pending_states for row in rows),
+             'newPending': sum(row[2] == '新增' and row[3] in pending_states for row in rows),
+             'recheck': sum(row[3] == '需重新复核' for row in rows),
+             'ongoing': sum(row[2] == '未变化' and row[3] in pending_states for row in rows),
+             'carriedResolved': sum(row[2] == '未变化' and row[3] == '已解决' for row in rows),
+             'absent': absent}
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = '汇总'
@@ -218,7 +261,7 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
                 ['本次待办', attention], ['需重新复核', sum(row[3] == '需重新复核' for row in rows)],
                 ['新增待办', sum(row[2] == '新增' and row[3] != '无需处理' for row in rows)],
                 ['意见沿用', sum(row[2] == '未变化' and bool(row[4]) for row in rows)],
-                ['下一步', '打开待处理页；优先看需重新复核和新增条目，在黄色列填写状态和意见。'],
+                ['下一步', '先看本次重点，点击处理入口到待处理页填写黄色列；未变化但未解决的事项仍在跟进清单。'],
                 ['统计口径', '生成时统计；手动修改处理状态后，汇总数字不实时更新，下次重跑重新统计。'],
                 ['左表记录数', summary['leftRows']],
                 ['右表记录数', summary['rightRows']], ['左表金额合计', summary['leftTotal']],
@@ -228,6 +271,9 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
     overview += [['金额差异怎么查', '对照左右金额和来源行回查单据，不自动断言差额原因。'],
                  ['单边记录怎么查', '核实遗漏、期间和编号口径。'],
                  ['重复 / 无效值怎么查', '先确认明细粒度与原始数据，再重新核对。']]
+    overview += [['本次重点', tasks['focus']], ['旧事项仍待跟进', tasks['ongoing']],
+                 ['已解决沿用', tasks['carriedResolved']], ['上次记录本次未出现', tasks['absent']],
+                 ['意见填写位置', '只在待处理或已匹配页填写；本次重点为只读视图，避免两处意见不一致。']]
     overview += list(summary['counts'].items()) + list(changes.items())
     for row in overview:
         ws.append(row)
@@ -245,7 +291,9 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
         ws.cell(number, 2).fill = PatternFill('solid', fgColor='E8F1FA')
     for number in range(6, ws.max_row + 1):
         ws.row_dimensions[number].height = 32
-    make_sheet(wb, '待处理', [r for r in rows if r[1] != '一致' or r[3] == '需重新复核'])
+    review = [r for r in rows if r[1] != '一致' or r[3] == '需重新复核']
+    make_focus(wb, focus, {row[10]: number for number, row in enumerate(review, 2)})
+    make_sheet(wb, '待处理', review)
     make_sheet(wb, '已匹配', [r for r in rows if r[1] == '一致' and r[3] != '需重新复核'])
     make_sheet(wb, '历史记录', history)
     meta = wb.create_sheet('_meta')
@@ -254,7 +302,7 @@ def build_workbook(report, summary, profile, previous_path, dest, input_names):
     meta.sheet_state = 'hidden'
     wb.save(dest)
     save_followup(rows, profile, input_names, dest.with_name('跟进清单.xlsx'))
-    return changes
+    return changes, tasks
 
 
 def main():
@@ -293,6 +341,7 @@ def main():
         if result.returncode:
             raise ValueError(result.stderr.strip())
         return json.loads(result.stdout)
+    input_hashes = {side: file_hash(args[side], 10 * 1024 * 1024) for side in ['left', 'right']}
     inspection = execute(['--inspect'])
     headers = {k: inspection[k]['headers'] for k in ['left', 'right']}
     if args['config'] and headers != profile['headers']:
@@ -307,21 +356,37 @@ def main():
         stage = Path(staging)/'result'
         summary = execute(['--out', str(stage)])
         manifest = read_json(stage/'运行清单.json')
+        if any(manifest['inputs'][side]['sha256'] != input_hashes[side] for side in input_hashes):
+            raise ValueError('检查表头后输入文件发生变化，请使用稳定的导出文件重新核对')
         input_names = {side: manifest['inputs'][side]['file'] for side in ['left', 'right']}
-        changes = build_workbook(read_json(stage/'核对记录.json'), summary, profile, args['previous'], stage/'复核工作簿.xlsx', input_names)
+        previous_hash = file_hash(args['previous'], 10 * 1024 * 1024) if args['previous'] else None
+        changes, tasks = build_workbook(read_json(stage/'核对记录.json'), summary, profile, args['previous'], stage/'复核工作簿.xlsx', input_names)
         manifest['workflowVersion'] = VERSION
         manifest['profileSHA256'] = digest(profile)
         manifest['reviewChanges'] = changes
+        manifest['reviewTasks'] = tasks
         if args['previous']:
-            manifest['previousReviewSHA256'] = hashlib.sha256(Path(args['previous']).read_bytes()).hexdigest()
+            if file_hash(args['previous'], 10 * 1024 * 1024) != previous_hash:
+                raise ValueError('上次复核工作簿在读取后发生变化，请重新核对')
+            manifest['previousReviewSHA256'] = previous_hash
         for filename in ['复核工作簿.xlsx', '跟进清单.xlsx']:
             manifest['outputs'].append({'file': filename, 'sha256': hashlib.sha256((stage/filename).read_bytes()).hexdigest()})
+        message = (f"本次重点 {tasks['focus']} 项：首次待核实 {tasks['firstPending']}，新增待办 {tasks['newPending']}，需重新复核 {tasks['recheck']}。\n"
+                   f"旧事项仍待跟进 {tasks['ongoing']} 项；已解决沿用 {tasks['carriedResolved']} 项。\n"
+                   f"上次记录本次未出现 {tasks['absent']} 项，不代表已解决。\n"
+                   "先查看复核工作簿的本次重点，点击处理入口填写原记录。跟进清单含所有未解决事项。\n"
+                   "以上为生成时快照，手工修改状态后需重新运行更新。\n")
+        (stage/'本次待办摘要.txt').write_text(message, encoding='utf-8')
+        manifest['outputs'].append({'file': '本次待办摘要.txt', 'sha256': hashlib.sha256((stage/'本次待办摘要.txt').read_bytes()).hexdigest()})
         (stage/'运行清单.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
+        if any(file_hash(args[side], 10 * 1024 * 1024) != input_hashes[side] for side in input_hashes):
+            raise ValueError('生成复核工作簿时输入文件发生变化，请重新核对')
         if args['save_config']:
             with Path(args['save_config']).open('x', encoding='utf-8') as f:
                 json.dump(profile, f, ensure_ascii=False, indent=2)
         stage.rename(out)
-    print(json.dumps({'workbook': str(out/'复核工作簿.xlsx'), 'followup': str(out/'跟进清单.xlsx'), 'changes': changes}, ensure_ascii=False))
+    print(json.dumps({'workbook': str(out/'复核工作簿.xlsx'), 'followup': str(out/'跟进清单.xlsx'),
+                      'taskSummary': str(out/'本次待办摘要.txt'), 'tasks': tasks, 'changes': changes}, ensure_ascii=False))
 
 
 if __name__ == '__main__':

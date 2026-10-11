@@ -1,6 +1,6 @@
 interface:
   display_name: "客户对账助手"
-  short_description: "客户说金额对不上？核对两份同口径明细，输出复核表与待核实跟进清单"
-  default_prompt: "使用 $finance-reconcile 核对我方和客户两份明细，先建议共同单号与金额列，确认口径后输出复核表和跟进清单，保存规则供下次复用。"
+  short_description: "反复核对客户明细：沿用规则和旧意见，先看本次新增与变化，交付跟进清单"
+  default_prompt: "使用 $finance-reconcile 按已确认规则核对这两份客户明细，沿用上次复核工作簿的意见，先告诉我这次新增和变化的事项，再交付复核表与跟进清单。首次使用时先建议字段并确认口径。"
 policy:
   allow_implicit_invocation: true

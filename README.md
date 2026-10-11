@@ -1,12 +1,14 @@
 # 客户对账助手 · finance-reconcile
 
-**客户发来一份 Excel，说金额对不上。先帮你找出该核实的几笔。**
+**更新客户明细后，先看这次新增和变化的事项，沿用已核实过的处理意见。**
 
-给刚开始独立负责客户月末对账、不会写代码的商贸公司财务助理准备。把我方明细与客户明细交给本地 AI 助手，确认对应方式，得到**内部复核表＋待核实跟进清单**。下次换表时复用规则，内容没变的处理意见可以沿用。
+给已经在用本地 Agent、反复核对固定格式客户明细、不想维护脚本的财务助理准备。第一次确认共同单号和金额列，保存规则；以后交更新明细和已填写的上次复核表，得到**本次重点＋内部复核表＋跟进清单**。未变化的已解决事项沿用，变化项重新复核，旧的未解决事项继续跟进。
 
-[复制给 Agent 开始使用](#复制这段话交给-codex) · [先看输出](examples/月末客户对账/跟进清单.xlsx) · [新手教程](docs/新手第一次使用.md)
+[![自动测试](https://github.com/79t25w9t4p-sketch/finance-reconcile-skill/actions/workflows/tests.yml/badge.svg)](https://github.com/79t25w9t4p-sketch/finance-reconcile-skill/actions/workflows/tests.yml)
 
-> 当前 v0.7.0，提供 Codex 本地使用流程，需要一次环境准备。演示均为虚构数据；尚无真实用户节省时间的测量。适合的是有共同单号、同一金额口径的明细核对。
+[复制给 Agent 开始使用](#复制这段话交给-codex) · [先看换表结果](examples/换表复用/说明.md) · [首次使用](docs/新手第一次使用.md) · [试用反馈](docs/试用反馈.md)
+
+> 当前 v0.8.0，只需 Python 3.9+ 和 openpyxl，不再需要 Node。提供 Codex 本地使用流程，首次仍需环境准备。演示均为虚构数据；尚无真实用户节省时间的测量。适合有共同单号、同一金额口径的明细核对。
 
 ## 先确认：是不是你正在做的这件事
 
@@ -27,6 +29,7 @@
 | 筛出金额差异、单边、重复及异常值 | 保留来源行的内部复核 Excel |
 | 重新抄一份异常清单去跟进 | 独立的跟进清单，带建议核实事项和反馈空栏 |
 | 换表后重做规则、搬上次处理意见 | 复用配置；内容变化的条目要求重新复核 |
+| 从旧异常里再次找出这次要处理的事项 | 本次重点突出首次待核实、新增和变化项；旧的未解决事项继续跟进 |
 
 金额不同不代表客户错账；重复单号可能是一单多行。工具整理线索，你核实事实。
 
@@ -44,6 +47,12 @@
 
 下载 [我方示例](examples/月末客户对账/模拟_我方销售明细.xlsx)、[客户示例](examples/月末客户对账/模拟_客户采购明细.xlsx)、[内部复核结果](examples/月末客户对账/复核工作簿.xlsx)、[跟进清单](examples/月末客户对账/跟进清单.xlsx)。可以先看这些文件，再决定是否准备运行环境。
 
+### 更新后，先看本次重点
+
+另一个虚构示例里，上次A、B、C均已填写模拟处理意见；更新明细后，A未变、B金额变化、C未出现、新增D。这次重点只有B、D两项，A沿用已解决，C留在历史。点击“处理入口”回到原记录填写，避免两份意见不一致。
+
+[查看换表复用示例及结果](examples/换表复用/说明.md)。这里展示重复工作的处理规则，不代表真实用户节省时长。
+
 ## 新手怎么开始
 
 当前教程针对能够读取本地文件、执行脚本的 **Codex**。只粘贴一段提示词，不会让普通聊天窗口自动获得本机脚本能力。项目开源；AI宿主及运行环境另行准备。
@@ -56,8 +65,8 @@
 帮我从这个 GitHub 仓库获取并试用客户对账 Skill：
 https://github.com/79t25w9t4p-sketch/finance-reconcile-skill
 
-1. 获取完整仓库到本任务的新目录，保留 SKILL.md、scripts、examples 及必要说明；不要只读取网页或单个 SKILL.md。GitHub 获取失败时，读取 https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口.md ，按其中列出的 jsDelivr 备用文件源和 agent-manifest.json 获取完整运行文件并校验，不混用不同版本；示例 Excel 由脚本在本地生成。
-2. 阅读技能说明和相关脚本，检查现有 Python、Node 与 openpyxl。优先复用已有环境；如果仅缺 Python 库，允许在本项目独立虚拟环境中安装 requirements.txt。缺 Python 或 Node 时先说明缺项及安装方式，不直接修改系统环境。
+1. 获取完整仓库到本任务的新目录，保留 SKILL.md、scripts、examples 及必要说明；不要只读取网页或单个 SKILL.md。GitHub 获取失败时，读取 https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.0.md ，按其中列出的 jsDelivr 备用文件源和 agent-manifest.json 获取完整运行文件并校验，不混用不同版本；示例 Excel 由脚本在本地生成。
+2. 阅读技能说明和相关脚本，检查现有 Python 3.9+ 与 openpyxl，不需要 Node。优先复用已有环境；如果仅缺 Python 库，允许在本项目独立虚拟环境中安装 requirements.txt。缺 Python 时先说明缺项及安装方式，不直接修改系统环境。
 3. 按 SKILL.md 运行月末客户对账虚构示例，交给我复核工作簿和跟进清单，带我看 SH-002。先不读取真实业务文件。
 4. 试用成功后，把完整技能文件安装到 Codex 用户技能目录 ~/.agents/skills/finance-reconcile，不复制 .git 和临时虚拟环境。已有同名目录时先说明，不覆盖其他技能。
 5. 告诉我安装位置、获取来源、代码版本、实际运行是否成功、以后怎么调用。两条来源都失败时报告具体卡点，不自行换未列出的第三方来源，也不要把未运行的结果说成成功。
@@ -70,10 +79,10 @@ https://github.com/79t25w9t4p-sketch/finance-reconcile-skill
 复制下面这一句给能联网、读写文件并执行脚本的 Agent：
 
 ```text
-请按这个入口获取客户对账 Skill、检查环境并运行虚构示例；成功后安装到当前宿主支持的技能目录，说明实际结果和以后怎么调用：https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口.md
+请按这个入口获取客户对账 Skill、检查环境并运行虚构示例；成功后安装到当前宿主支持的技能目录，说明实际结果和以后怎么调用：https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.0.md
 ```
 
-[Agent 接入说明](docs/Agent入口.md)包括固定代码版本、运行文件清单和校验要求。已安装后直接调用，无需每次重新获取。备用源按[jsDelivr 官方 GitHub 文件规则](https://github.com/jsdelivr/jsdelivr#github)工作，有缓存；不承诺所有国内网络可达。预生成 Excel 未列入备用下载清单，首次试用由脚本重新生成。网页可读、文件可下载和脚本可运行是三个不同环节；这不是一个远程对账 API。
+[Agent 接入说明](https://cdn.jsdelivr.net/gh/79t25w9t4p-sketch/finance-reconcile-skill@main/docs/Agent入口-v0.8.0.md)包括固定代码版本、运行文件清单和校验要求。已安装后直接调用，无需每次重新获取。备用源按[jsDelivr 官方 GitHub 文件规则](https://github.com/jsdelivr/jsdelivr#github)工作，有缓存；不承诺所有国内网络可达。预生成 Excel 未列入备用下载清单，首次试用由脚本重新生成。网页可读、文件可下载和脚本可运行是三个不同环节；这不是一个远程对账 API。
 
 ### 安装后，直接说要做什么
 
@@ -89,14 +98,15 @@ https://github.com/79t25w9t4p-sketch/finance-reconcile-skill
 
 ## 打开结果后做什么
 
-- **复核工作簿.xlsx**：先看“汇总”，再到“待处理”的黄色列填写状态与内部意见；“已匹配”可抽查，“历史记录”保留本次未出现项。
+- **复核工作簿.xlsx**：先看“汇总”和“本次重点”；点击处理入口，到“待处理”的黄色列填写状态与内部意见。“本次重点”是只读视图；“已匹配”可抽查，“历史记录”保留本次未出现项。
 - **跟进清单.xlsx**：查看“待核实事项”，包含生成时待处理、处理中、需重新复核项，不带内部意见、隐藏标识或已解决记录。分享前检查客户、期间、币种及收件范围；它仍含业务编号和金额。
+- **本次待办摘要.txt**：列出本次重点、旧事项仍待跟进、已解决沿用和本次未出现数量。没有新增不代表全部完成。
 
 两个文件都是生成时快照；手动改内部处理状态不会实时更新跟进清单和汇总。需要更新时重跑。跟进反馈需整理回内部复核表黄色列，当前没有自动导入反馈功能。
 
 ## 使用边界
 
-- 需要 Node.js 18+、Python 3.9+、`openpyxl>=3.1,<4`；`scripts/doctor.py` 只检查现有环境。
+- 需要 Python 3.9+、`openpyxl>=3.1,<4`；`scripts/doctor.py` 只检查现有环境。
 - 支持UTF-8 CSV/TSV、XLSX，最多5000条明细、50列。旧xls先另存，公式先在原软件重算并导出值。
 - 根据表头建议字段；多个金额列、未知列名和不对应的客户范围需要确认。不能只因“含税金额”同名就认定口径一致。
 - 保留重复、空编号、无效金额；不做模糊匹配、自动合并或跨行求和。金额精确到分，输出金额为精确文本。
@@ -136,10 +146,9 @@ python3 scripts/workflow.py --left 我方.xlsx --right 客户.xlsx --left-keys '
 python3 scripts/workflow.py --config 核对配置.json --left 新我方.xlsx --right 新客户.xlsx --previous 首次结果/复核工作簿.xlsx --out 新结果
 ```
 
-Node不在PATH时给Python脚本传 `--node`。Python缺组件时，在选定的隔离环境中运行 `python -m pip install -r requirements.txt`，安装和运行必须使用同一解释器。非首行表头用 `--left-header-row` / `--right-header-row`，多工作表用 `--left-sheet` / `--right-sheet`。
+Python缺组件时，在选定的隔离环境中运行 `python -m pip install -r requirements.txt`，安装和运行必须使用同一解释器。非首行表头用 `--left-header-row` / `--right-header-row`，多工作表用 `--left-sheet` / `--right-sheet`。旧Node入口改为 `python scripts/reconcile.py`，移除 `--node` 与 `--python` 参数；旧配置和复核表格式继续支持。
 
 ```sh
-node --test tests/*.test.cjs
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
