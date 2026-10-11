@@ -11,7 +11,7 @@ import tempfile
 
 import core
 
-VERSION = '0.8.3'
+VERSION = '0.8.4'
 
 
 def fingerprint(path, limit=None):

@@ -22,6 +22,44 @@ class Suggestions(unittest.TestCase):
             for row in rows:ws.append(row)
         wb.save(path);wb.close()
 
+    def test_summary_and_repeated_header_rows_require_data_choice_without_removal(self):
+        from reconcile import fingerprint,load_table
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'export.xlsx'
+            self.workbook(path,[('明细',[['编号','金额'],['A','123.45'],['编号','金额'],['合计','123.45']])])
+            before=fingerprint(path)
+            result=subprocess.run([sys.executable,str(ROOT/'scripts/suggest.py'),'--left',str(path),'--right',str(path),
+                                   '--left-sheet','明细','--right-sheet','明细','--left-header-row','1','--right-header-row','1'],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            proposal=json.loads(result.stdout)
+            self.assertEqual(proposal['status'],'needs_data_choice')
+            warnings={x['kind']:x for x in proposal['inputOverview']['left']['dataWarnings']}
+            self.assertEqual(warnings['summary_rows']['rows'],[4]);self.assertEqual(warnings['repeated_headers']['rows'],[3])
+            self.assertNotIn('123.45',result.stdout)
+            self.assertEqual(fingerprint(path),before)
+            table,_=load_table(path,'明细','1')
+            self.assertEqual(len(table['rows']),3)
+            self.assertEqual(table['rows'][2][0],'合计')
+
+    def test_summary_labels_are_exact_and_positions_are_bounded(self):
+        table={'headers':['编号','金额'],'rows':[['TOTAL-001','10'],['合计-001','10']]}
+        self.assertEqual(module.data_warnings(table),[])
+        table={'headers':['编号','金额'],'rows':[['total','10']]*25,'sourceLines':list(range(8,33))}
+        warning=module.data_warnings(table)[0]
+        self.assertEqual(warning['count'],25);self.assertEqual(warning['rows'],list(range(8,28)))
+        self.assertFalse(warning['positionsComplete'])
+        self.assertEqual(len(table['rows']),25)
+
+    def test_styled_empty_trailing_columns_are_not_header_candidates(self):
+        from openpyxl.styles import PatternFill
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'styled.xlsx'
+            self.workbook(path,[('明细',[['编号','金额'],['A','10']])])
+            wb=openpyxl.load_workbook(path);wb['明细']['E1'].fill=PatternFill('solid',fgColor='FFFF00');wb['明细']['E5'].fill=PatternFill('solid',fgColor='FFFF00');wb.save(path);wb.close()
+            info,location=module.inspect_input(path)
+            self.assertEqual(info['headers'],['编号','金额']);self.assertEqual(info['rows'],1)
+            self.assertEqual(location,{'sheet':'明细','header_row':'1'})
+
     def test_header_row_without_sheet_skips_short_instruction_pages(self):
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'notes.xlsx'

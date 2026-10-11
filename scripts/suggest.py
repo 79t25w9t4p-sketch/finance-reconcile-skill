@@ -15,6 +15,24 @@ ALIASES = {
     'company': {'公司', '公司名称', '核算主体', '本方公司', 'company', 'company_name'},
 }
 
+SUMMARY_LABELS = {'合计','小计','总计','本页合计','累计合计','total','subtotal','grand total'}
+
+
+def data_warnings(table):
+    """Flag possible non-detail rows, without removing or printing their values."""
+    reference_columns=[i for i,name in enumerate(table['headers']) if name.strip().lower() in ALIASES['reference']]
+    groups={'summary_rows':[],'repeated_headers':[]}
+    lines=table.get('sourceLines',range(2,len(table['rows'])+2))
+    for number,row in zip(lines,table['rows']):
+        if [value.strip() for value in row]==table['headers']:
+            groups['repeated_headers'].append(number)
+        elif any(row[i].strip().casefold() in SUMMARY_LABELS for i in reference_columns):
+            groups['summary_rows'].append(number)
+    reasons={'summary_rows':'编号列含疑似合计/小计标签，若为汇总行会重复计算；请确认它是汇总行还是实际业务编号',
+             'repeated_headers':'明细中出现与表头相同的行，请确认是否为打印分页的重复表头'}
+    return [{'kind':kind,'count':len(rows),'rows':rows[:20],'positionsComplete':len(rows)<=20,'reason':reasons[kind]}
+            for kind,rows in groups.items() if rows]
+
 
 def propose(left, right):
     def candidates(headers):
@@ -84,7 +102,7 @@ def inspect_input(file, sheet=None, header_row=None):
     if metadata['sheet'] is not None:
         location={'sheet':metadata['sheet'],'header_row':str(metadata['headerRow'])}
     return {'file':path.name,'sheet':metadata['sheet'],'headerRow':metadata['headerRow'],
-            'headers':table['headers'],'rows':len(table['rows'])},location
+            'headers':table['headers'],'rows':len(table['rows']),'dataWarnings':data_warnings(table)},location
 
 
 def main():
@@ -110,6 +128,12 @@ def main():
     proposal = propose(inspection['left']['headers'], inspection['right']['headers'])
     for side,location in locations.items():
         proposal['mapping'].update({side+'_'+key:value for key,value in location.items()})
+    data_choices=[{'side':side,'field':'data_rows',**warning}
+                  for side,info in inspection.items() for warning in info['dataWarnings']]
+    if data_choices:
+        proposal['fieldStatus']=proposal['status']
+        proposal['status']='needs_data_choice'
+        proposal['questions'].extend(data_choices)
     proposal['inputOverview'] = inspection
     print(json.dumps(proposal, ensure_ascii=False, indent=2))
 

@@ -37,6 +37,7 @@ def inspect_layout(wb, options):
             # Formula/error cells cannot be treated as a recognized header.
             if any(c.data_type in {'f','e'} for c in row): continue
             headers=['' if c.value is None else str(c.value).strip() for c in row]
+            while headers and not headers[-1]: headers.pop()
             normalized={value.lower() for value in headers}
             if normalized.intersection(reference) and normalized.intersection(amount):
                 candidate={'sheet':name,'state':ws.sheet_state,'headerRow':number,'headers':headers}
@@ -53,7 +54,7 @@ def read_sheet(wb, sheet, header_row):
     ws=wb[sheet or wb.sheetnames[0]]
     if header_row<1 or header_row>ws.max_row: raise ValueError('Header row outside sheet')
     if ws.max_row-header_row>5000 or ws.max_column>50: raise ValueError("At most 5000 data rows and 50 columns")
-    out=io.StringIO();writer=csv.writer(out);source_lines=[]
+    out=io.StringIO();writer=csv.writer(out);source_lines=[];width=None
     for row_number,row in enumerate(ws.iter_rows(min_row=header_row),header_row):
         values=[]
         for c in row:
@@ -64,6 +65,12 @@ def read_sheet(wb, sheet, header_row):
                 raise ValueError("Ambiguous numeric identifier/large number at " + c.coordinate + ": provide text identifiers and exact decimal amounts")
             if isinstance(v,float): v=str(v)
             values.append('' if v is None else str(v))
+        if width is None:
+            width=len(values)
+            while width and not values[width-1].strip(): width-=1
+        elif any(value.strip() for value in values[width:]):
+            raise ValueError('表头之外存在数据：第'+str(row_number)+'行；请补齐列名，不能直接丢弃该列')
+        values=values[:width]
         writer.writerow(values)
         if row_number>header_row and any(x.strip() for x in values): source_lines.append(row_number)
     return {'csv':out.getvalue(),'sourceLines':source_lines,'sheet':ws.title}

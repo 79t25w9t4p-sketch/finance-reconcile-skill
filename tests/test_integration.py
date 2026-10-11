@@ -5,7 +5,23 @@ import sys
 import hashlib
 import openpyxl
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts'))
 class Integration(unittest.TestCase):
+    def test_empty_trailing_style_columns_trim_but_unheaded_data_is_rejected(self):
+        from openpyxl.styles import PatternFill
+        from reconcile import load_table
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'styled.xlsx'
+            wb=openpyxl.Workbook();ws=wb.active;ws.title='明细';ws.append(['编号','金额']);ws.append(['001','10']);ws.append([]);ws.append(['002','20'])
+            ws['E1'].fill=PatternFill('solid',fgColor='FFFF00');ws['E4'].fill=PatternFill('solid',fgColor='FFFF00');wb.save(path)
+            table,metadata=load_table(path,'明细','1')
+            self.assertEqual(table['headers'],['编号','金额']);self.assertEqual(table['sourceLines'],[2,4]);self.assertEqual(metadata['rows'],2)
+            ws['D4']='不能丢弃的数据';wb.save(path)
+            with self.assertRaisesRegex(ValueError,'表头之外存在数据'):load_table(path,'明细','1')
+            ws['D4']=None;ws['B1']=None;ws['C1']='金额';wb.save(path)
+            with self.assertRaisesRegex(ValueError,'表头不能为空'):load_table(path,'明细','1')
+            wb.close()
+
     def run_cli(self,*args):
         return subprocess.run([sys.executable,str(ROOT/'scripts/reconcile.py'),*map(str,args)],capture_output=True,text=True)
     def workbook(self,path,formula=False,multiple=False):
