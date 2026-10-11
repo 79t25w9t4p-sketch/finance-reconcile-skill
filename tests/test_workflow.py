@@ -10,6 +10,23 @@ import openpyxl
 ROOT = Path(__file__).resolve().parents[1]
 
 class Workflow(unittest.TestCase):
+    def test_followup_literal_ids_and_empty_pending(self):
+        with tempfile.TemporaryDirectory() as folder:
+            d=Path(folder);left=d/'left.csv';right=d/'right.csv';config=d/'config.json'
+            left.write_text('编号,金额\n=单据,10',encoding='utf8')
+            right.write_text('编号,金额\n=单据,9',encoding='utf8')
+            base=[sys.executable,str(ROOT/'scripts/workflow.py'),'--node',os.environ.get('NODE','node'),'--left',str(left),'--right',str(right)]
+            result=subprocess.run(base+['--save-config',str(config),'--left-keys','["编号"]','--right-keys','["编号"]','--left-amount','金额','--right-amount','金额','--out',str(d/'first')],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            followup=openpyxl.load_workbook(d/'first/跟进清单.xlsx')
+            self.assertEqual(followup['待核实事项']['A2'].value,'=单据')
+            self.assertEqual(followup['待核实事项']['A2'].data_type,'s')
+            right.write_text('编号,金额\n=单据,10',encoding='utf8')
+            result=subprocess.run(base+['--config',str(config),'--out',str(d/'second')],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            followup=openpyxl.load_workbook(d/'second/跟进清单.xlsx')
+            self.assertEqual(followup['待核实事项'].max_row,1)
+            self.assertFalse(any(c.data_type=='f' for ws in followup for row in ws for c in row))
     def test_reuse_review_changes_history_and_schema(self):
         with tempfile.TemporaryDirectory() as folder:
             d=Path(folder);left=d/'left.csv';right=d/'right.csv';config=d/'配置.json'
@@ -33,6 +50,15 @@ class Workflow(unittest.TestCase):
             self.assertEqual(wb['汇总']['B2'].value,3);self.assertEqual(wb['汇总']['B3'].value,2);self.assertEqual(wb['汇总']['B4'].value,1);self.assertEqual(wb['汇总']['B5'].value,1);self.assertEqual(wb['待处理']['A2'].value,'B');
             self.assertEqual(wb['历史记录']['A2'].value,'D');self.assertEqual(wb['历史记录']['E2'].value,'=原始意见')
             self.assertTrue(wb['待处理'].auto_filter.ref);self.assertEqual(wb['待处理'].freeze_panes,'F2');self.assertEqual(len(wb['待处理'].data_validations.dataValidation),1)
+            followup=openpyxl.load_workbook(d/'second/跟进清单.xlsx')
+            self.assertEqual(followup.sheetnames,['使用说明','待核实事项'])
+            self.assertEqual(followup['待核实事项'].max_row,4)
+            followup_rows=list(followup['待核实事项'].values)
+            self.assertEqual({r[0] for r in followup_rows[1:]},{'B','C','E'})
+            self.assertNotIn('=原始意见',str([list(ws.values) for ws in followup]))
+            self.assertTrue(all(r[2] for r in followup_rows[1:]))
+            manifest=json.loads((d/'second/运行清单.json').read_text())
+            self.assertIn('跟进清单.xlsx',[x['file'] for x in manifest['outputs']])
             right.write_text('编号,余额,说明\nA,9,说明',encoding='utf8')
             r=run('invalid','--config',config);self.assertNotEqual(r.returncode,0);self.assertIn('表头',r.stderr);self.assertFalse((d/'invalid').exists());self.assertEqual(saved,json.loads(config.read_text()))
 

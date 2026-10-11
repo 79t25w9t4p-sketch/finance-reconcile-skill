@@ -18,3 +18,5 @@ jobs:
       - run: python tests/test_integration.py
       - run: python tests/test_workflow.py
       - run: python tests/test_suggest.py
+      - run: python scripts/doctor.py
+      - run: python examples/month_end_demo.py "$RUNNER_TEMP/month-end-demo"

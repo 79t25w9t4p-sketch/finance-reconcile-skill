@@ -39,7 +39,7 @@ class Integration(unittest.TestCase):
             report=json.loads((Path(d)/'result/核对记录.json').read_text());self.assertEqual([x['left'][0]['line'] for x in report['result']],[4,6])
             manifest=json.loads((Path(d)/'result/运行清单.json').read_text());self.assertEqual(manifest['inputs']['left']['headerRow'],3);self.assertEqual(manifest['inputs']['left']['sheet'],'Sheet')
     def test_help_requires_no_input(self):
-        r=self.run_cli('--help');self.assertEqual(r.returncode,0);self.assertIn('0.6.0',r.stdout)
+        r=self.run_cli('--help');self.assertEqual(r.returncode,0);self.assertRegex(r.stdout,r'^财务明细核对 \d+\.\d+\.\d+')
     def test_composite_keys_prevent_cross_customer_match(self):
         with tempfile.TemporaryDirectory() as d:
             left=Path(d)/'left.csv';right=Path(d)/'right.csv'

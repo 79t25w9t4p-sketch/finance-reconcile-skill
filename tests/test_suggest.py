@@ -12,6 +12,15 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class Suggestions(unittest.TestCase):
+    def test_delivery_numbers_and_tax_amounts_need_scope_confirmation(self):
+        p=module.propose(['送货单号','含税金额'],['供方送货单号','含税金额'])
+        self.assertEqual(p['status'],'ready_for_confirmation')
+        self.assertEqual(json.loads(p['mapping']['left_keys']),['送货单号'])
+        self.assertEqual(json.loads(p['mapping']['right_keys']),['供方送货单号'])
+        self.assertIn('两表期间、币种、金额含义和明细粒度一致',p['confirm'])
+        ambiguous=module.propose(['送货单号','含税金额','未税金额'],['供方送货单号','含税金额'])
+        self.assertEqual(ambiguous['status'],'needs_field_choice')
+        self.assertNotIn('left_amount',ambiguous['mapping'])
     def test_different_headers_map_same_roles(self):
         p=module.propose(['客户','订单号','应收金额'],['客户名称','单据编号','回款金额'])
         self.assertEqual(p['status'],'ready_for_confirmation')

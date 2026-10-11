@@ -15,7 +15,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '0.6.0'
+VERSION = '0.7.0'
 HEADERS = ['编号 / 联合键', '核对结果', '本次变化', '处理状态', '处理意见', '左表来源行', '右表来源行', '左表原金额', '右表原金额', '左减右差额', '记录标识', '内容指纹']
 STATES = {'待处理', '处理中', '已解决', '需重新复核', '无需处理'}
 
@@ -111,7 +111,65 @@ def make_sheet(wb, name, rows):
     return ws
 
 
-def build_workbook(report, summary, profile, previous_path, dest):
+def save_followup(rows, profile, input_names, dest):
+    """Export unresolved items without internal review notes or hidden identifiers."""
+    advice = {
+        '金额差异': '请核对两边计价、含税口径及优惠/退货调整，并回查原单据。',
+        '仅左表': '请确认右表是否遗漏、是否跨期，或业务编号是否不同。',
+        '仅右表': '请确认左表是否遗漏、是否跨期，或业务编号是否不同。',
+        '重复编号': '请核实重复是重复登记还是一单多行；确认前不能直接删行或合并。',
+        '无效金额': '请补齐或修正原表金额；空值不等于零。',
+        '空编号': '请补齐业务编号；不能仅凭相同金额认定为同一笔。',
+        '空编号及无效金额': '请补齐业务编号及金额后重新核对。',
+        '一致': '记录内容变化后仍需复核；当前指定金额列相同不代表全部业务信息相同。',
+    }
+    wb = openpyxl.Workbook()
+    info = wb.active
+    info.title = '使用说明'
+    mapping = profile['mapping']
+    info_rows = [
+        ['待核实跟进清单', VERSION],
+        ['用途', '列出生成时仍待处理的事项，供人工核实；不判定哪方错账。'],
+        ['左表文件', input_names['left']], ['右表文件', input_names['right']],
+        ['左表比较金额列', mapping['left_amount']], ['右表比较金额列', mapping['right_amount']],
+        ['编号对应', '左：'+mapping['left_keys']+'；右：'+mapping['right_keys']],
+        ['差额方向', '左表金额减右表金额；重复或异常不计算差额。'],
+        ['分享前', '检查客户、期间、币种、含税口径和收件范围；此文件仍含业务编号与金额。'],
+        ['状态口径', '只含生成时待处理、处理中、需重新复核项；不含已解决、无需处理和历史条目。'],
+        ['反馈填写', '核实反馈供填写；需要沿用意见时，将结果填写回内部复核工作簿的黄色列。'],
+    ]
+    for number, row in enumerate(info_rows, 1):
+        for col, value in enumerate(row, 1):
+            text_cell(info.cell(number, col), value)
+            info.cell(number, col).alignment = Alignment(wrap_text=True, vertical='top')
+        info.row_dimensions[number].height = 32
+    info.column_dimensions['A'].width = 24
+    info.column_dimensions['B'].width = 90
+    info['A1'].font = Font(size=16, bold=True, color='17365D')
+    ws = wb.create_sheet('待核实事项')
+    headers = ['核对编号', '核对结果', '建议核实事项', '左表原金额', '右表原金额',
+               '左减右差额', '左表来源行', '右表来源行', '核实反馈']
+    pending = [r for r in rows if r[3] in {'待处理', '处理中', '需重新复核'}]
+    table = [headers] + [[r[0], r[1], advice[r[1]], r[7], r[8], r[9], r[5], r[6], ''] for r in pending]
+    for number, row in enumerate(table, 1):
+        for col, value in enumerate(row, 1):
+            cell = ws.cell(number, col)
+            text_cell(cell, value)
+            cell.alignment = Alignment(wrap_text=True, vertical='top')
+            if number == 1:
+                cell.fill = PatternFill('solid', fgColor='17365D')
+                cell.font = Font(bold=True, color='FFFFFF')
+            elif col == 9:
+                cell.fill = PatternFill('solid', fgColor='FFF2CC')
+        ws.row_dimensions[number].height = 48 if number > 1 else 30
+    for col, width in enumerate([34, 18, 58, 20, 20, 20, 18, 18, 44], 1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
+    ws.freeze_panes = 'D2'
+    ws.auto_filter.ref = ws.dimensions
+    wb.save(dest)
+
+
+def build_workbook(report, summary, profile, previous_path, dest, input_names):
     profile_hash = digest(profile)
     previous, history = read_previous(previous_path, profile_hash)
     rows = []
@@ -195,6 +253,7 @@ def build_workbook(report, summary, profile, previous_path, dest):
     meta.append(['profile', profile_hash])
     meta.sheet_state = 'hidden'
     wb.save(dest)
+    save_followup(rows, profile, input_names, dest.with_name('跟进清单.xlsx'))
     return changes
 
 
@@ -247,20 +306,22 @@ def main():
     with tempfile.TemporaryDirectory(dir=out.parent) as staging:
         stage = Path(staging)/'result'
         summary = execute(['--out', str(stage)])
-        changes = build_workbook(read_json(stage/'核对记录.json'), summary, profile, args['previous'], stage/'复核工作簿.xlsx')
         manifest = read_json(stage/'运行清单.json')
+        input_names = {side: manifest['inputs'][side]['file'] for side in ['left', 'right']}
+        changes = build_workbook(read_json(stage/'核对记录.json'), summary, profile, args['previous'], stage/'复核工作簿.xlsx', input_names)
         manifest['workflowVersion'] = VERSION
         manifest['profileSHA256'] = digest(profile)
         manifest['reviewChanges'] = changes
         if args['previous']:
             manifest['previousReviewSHA256'] = hashlib.sha256(Path(args['previous']).read_bytes()).hexdigest()
-        manifest['outputs'].append({'file': '复核工作簿.xlsx', 'sha256': hashlib.sha256((stage/'复核工作簿.xlsx').read_bytes()).hexdigest()})
+        for filename in ['复核工作簿.xlsx', '跟进清单.xlsx']:
+            manifest['outputs'].append({'file': filename, 'sha256': hashlib.sha256((stage/filename).read_bytes()).hexdigest()})
         (stage/'运行清单.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
         if args['save_config']:
             with Path(args['save_config']).open('x', encoding='utf-8') as f:
                 json.dump(profile, f, ensure_ascii=False, indent=2)
         stage.rename(out)
-    print(json.dumps({'workbook': str(out/'复核工作簿.xlsx'), 'changes': changes}, ensure_ascii=False))
+    print(json.dumps({'workbook': str(out/'复核工作簿.xlsx'), 'followup': str(out/'跟进清单.xlsx'), 'changes': changes}, ensure_ascii=False))
 
 
 if __name__ == '__main__':
