@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "version": "0.8.1",
+  "repository": "79t25w9t4p-sketch/finance-reconcile-skill",
+  "revision": "5f3044b8ee4babcce99cccef0793b609b6f09117",
+  "files": [
+    {
+      "path": ".gitignore",
+      "size": 96,
+      "git_blob_sha1": "ab430e9870653a7f775ee34c0b90199489a63187"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "size": 3524,
+      "git_blob_sha1": "69be149743c6b7c39f2a633a18de4e04bad849f2"
+    },
+    {
+      "path": "LICENSE",
+      "size": 1087,
+      "git_blob_sha1": "29e99847fb9b01c10627bdbfa40e216b8fec2385"
+    },
+    {
+      "path": "README.md",
+      "size": 6910,
+      "git_blob_sha1": "3548f26c9dd520bbcd2210e66918c594555d202e"
+    },
+    {
+      "path": "SKILL.md",
+      "size": 9184,
+      "git_blob_sha1": "9db54c61e0b8ab6609e6683afc7938b3b0674433"
+    },
+    {
+      "path": "VALIDATION.md",
+      "size": 6973,
+      "git_blob_sha1": "de0f234be10c395d90843cc96c329d451befd7c5"
+    },
+    {
+      "path": "agents/openai.yaml",
+      "size": 458,
+      "git_blob_sha1": "dd3cad8dbccbb883d49633d646eec64ea734c16e"
+    },
+    {
+      "path": "docs/分享文案.md",
+      "size": 2335,
+      "git_blob_sha1": "eea794df2cff8a2fbfb0c639e43862c248771afb"
+    },
+    {
+      "path": "docs/定位与改良方案.md",
+      "size": 2199,
+      "git_blob_sha1": "52eb9708ff9929c487990b795747fa95ec68e331"
+    },
+    {
+      "path": "docs/新手第一次使用.md",
+      "size": 4356,
+      "git_blob_sha1": "b2e40ca8ebc2cb95c549696f805a6cec886d0e7c"
+    },
+    {
+      "path": "docs/试用反馈.md",
+      "size": 1659,
+      "git_blob_sha1": "8b04d2a2dd4187481feca90d548ca3db85c252bc"
+    },
+    {
+      "path": "examples/month_end_demo.py",
+      "size": 4421,
+      "git_blob_sha1": "6a3e0c5dc67fe3423d55151284ba734c1336d2bd"
+    },
+    {
+      "path": "examples/workflow_demo.py",
+      "size": 1268,
+      "git_blob_sha1": "94bb8d3b096f58a53f0d4b37ddbd6f58bdc1c150"
+    },
+    {
+      "path": "examples/使用体验.md",
+      "size": 1897,
+      "git_blob_sha1": "f831c8f49463a86c2a136f6c3a5d85d3ae1dab2b"
+    },
+    {
+      "path": "examples/右表.csv",
+      "size": 151,
+      "git_blob_sha1": "dd9c17b0e49546c7d2e4e0e85199bb132d20e017"
+    },
+    {
+      "path": "examples/左表.csv",
+      "size": 190,
+      "git_blob_sha1": "e3ec633903ddf53792c819bd05a880336040bdda"
+    },
+    {
+      "path": "examples/换表复用/本次待办摘要.txt",
+      "size": 383,
+      "git_blob_sha1": "0f8e6ee1ff23584dad70d5d95857cf1ca26d6f5b"
+    },
+    {
+      "path": "examples/换表复用/说明.md",
+      "size": 1371,
+      "git_blob_sha1": "ce9374653f20411dbbb23eddd03f87804249c50d"
+    },
+    {
+      "path": "examples/月末客户对账/说明.md",
+      "size": 444,
+      "git_blob_sha1": "13d69963b3c5801cb96b4f156f2f6ba5a42b3a2a"
+    },
+    {
+      "path": "examples/核对结果/完整核对表.csv",
+      "size": 536,
+      "git_blob_sha1": "ec3d4d036044596181e625970e6786b5880967ad"
+    },
+    {
+      "path": "examples/核对结果/差异表.csv",
+      "size": 482,
+      "git_blob_sha1": "1e1c01f170e94bcb4fe12ec7c5527b4b9a7cf07e"
+    },
+    {
+      "path": "examples/核对结果/摘要.json",
+      "size": 423,
+      "git_blob_sha1": "b2be662ceecb3ba9d0c45bb77b899f41eba41bfa"
+    },
+    {
+      "path": "examples/核对结果/核对记录.json",
+      "size": 2542,
+      "git_blob_sha1": "fa98e1df391a0a305771f3f257f62bed5ac30bb9"
+    },
+    {
+      "path": "examples/核对结果/运行清单.json",
+      "size": 1649,
+      "git_blob_sha1": "feca2560a36bd7c0b28988ad912d47f919c6b61a"
+    },
+    {
+      "path": "examples/跨客户同单号/右表.csv",
+      "size": 42,
+      "git_blob_sha1": "610c2836bfbe218ca15471c4450973ddbc502f88"
+    },
+    {
+      "path": "examples/跨客户同单号/左表.csv",
+      "size": 42,
+      "git_blob_sha1": "c43d72c3cf5f48148340f06ba5fb77be0625e497"
+    },
+    {
+      "path": "examples/跨客户同单号/结果/完整核对表.csv",
+      "size": 248,
+      "git_blob_sha1": "cff93eb290bf9b1291225eb53beb6b93dfcfa761"
+    },
+    {
+      "path": "examples/跨客户同单号/结果/差异表.csv",
+      "size": 248,
+      "git_blob_sha1": "cff93eb290bf9b1291225eb53beb6b93dfcfa761"
+    },
+    {
+      "path": "examples/跨客户同单号/结果/摘要.json",
+      "size": 308,
+      "git_blob_sha1": "5201b83d60f96fc771de2ff7b3723611bda65bd3"
+    },
+    {
+      "path": "examples/跨客户同单号/结果/核对记录.json",
+      "size": 699,
+      "git_blob_sha1": "de7ba31d1366e37106c7a711f70a8b1de2aba980"
+    },
+    {
+      "path": "examples/跨客户同单号/结果/运行清单.json",
+      "size": 1682,
+      "git_blob_sha1": "592013b9451ed3fde924464e185299b1686cf8be"
+    },
+    {
+      "path": "requirements.txt",
+      "size": 17,
+      "git_blob_sha1": "4a16a09a6113e51e56908863d64395346b2b6ddf"
+    },
+    {
+      "path": "scripts/core.py",
+      "size": 7315,
+      "git_blob_sha1": "26f4444514a1ba8fcc2c91dca225b4e81d3526ad"
+    },
+    {
+      "path": "scripts/doctor.py",
+      "size": 2686,
+      "git_blob_sha1": "39ef7a786ca687fc9cc27cea6db25313f6e974d6"
+    },
+    {
+      "path": "scripts/reconcile.py",
+      "size": 9092,
+      "git_blob_sha1": "d8115ffdb5fb19050fb44106236db9192dcdcc6f"
+    },
+    {
+      "path": "scripts/suggest.py",
+      "size": 4550,
+      "git_blob_sha1": "3e661f49fd815f5093f048bb9479d089afc26d9e"
+    },
+    {
+      "path": "scripts/workflow.py",
+      "size": 22748,
+      "git_blob_sha1": "4b1e27e030e5fb245744ccf582fb753883bc5f83"
+    },
+    {
+      "path": "scripts/xlsx_read.py",
+      "size": 2240,
+      "git_blob_sha1": "785b508595af4a28a805d3d665efef5ce81a9ba8"
+    },
+    {
+      "path": "参考对比.md",
+      "size": 3048,
+      "git_blob_sha1": "55788fd4130fb53b0615d1b463b980b8de7e7b3d"
+    }
+  ],
+  "omitted_prebuilt_examples": [
+    "examples/换表复用/上次复核工作簿.xlsx",
+    "examples/换表复用/本次复核工作簿.xlsx",
+    "examples/换表复用/本次跟进清单.xlsx",
+    "examples/月末客户对账/复核工作簿.xlsx",
+    "examples/月末客户对账/模拟_客户采购明细.xlsx",
+    "examples/月末客户对账/模拟_我方销售明细.xlsx",
+    "examples/月末客户对账/跟进清单.xlsx",
+    "examples/重跑复核示例.xlsx",
+    "examples/首次复核示例.xlsx"
+  ],
+  "note": "v0.8.1仅修订技能和使用流程，核对脚本与v0.8.0一致；备用源提供完整运行文件，预生成xlsx由脚本本地生成。测试与GitHub管理文件无需安装。"
+}
