@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "version": "0.8.5",
+  "version": "0.8.6",
   "repository": "79t25w9t4p-sketch/finance-reconcile-skill",
-  "revision": "28ab5f35d2f2b181b874cd1bc8fb8f4e0e0df532",
+  "revision": "0d0ed228d9f2f112118084cf5f040878417e8960",
   "files": [
     {
       "path": ".gitignore",
@@ -11,8 +11,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "size": 5838,
-      "git_blob_sha1": "444e64a02256776b511ed7ae8a983f5b82b2396f"
+      "size": 6176,
+      "git_blob_sha1": "bf58d33813fccc008fb4068ec3797e345d7b53f9"
     },
     {
       "path": "LICENSE",
@@ -22,7 +22,7 @@
     {
       "path": "README.md",
       "size": 7480,
-      "git_blob_sha1": "6c56fadadb99005ee61a56dcd4f015981c103b86"
+      "git_blob_sha1": "15d1a4a1120a13e22c88a2fb05be376badb83295"
     },
     {
       "path": "SKILL.md",
@@ -31,8 +31,8 @@
     },
     {
       "path": "VALIDATION.md",
-      "size": 12143,
-      "git_blob_sha1": "2b77c7b7fc7a4b498d90c339a832aa04e6854457"
+      "size": 12950,
+      "git_blob_sha1": "5fc39c079eda33455aad32082140ea70727521d5"
     },
     {
       "path": "agents/openai.yaml",
@@ -42,7 +42,7 @@
     {
       "path": "docs/分享文案.md",
       "size": 2335,
-      "git_blob_sha1": "437b7ebefeac0520580f0eb16bd6f52a7c52e461"
+      "git_blob_sha1": "4c86b1c0fa7938bc86a4741eda171534bc346f1b"
     },
     {
       "path": "docs/定位与改良方案.md",
@@ -52,7 +52,7 @@
     {
       "path": "docs/新手第一次使用.md",
       "size": 4980,
-      "git_blob_sha1": "b01b782f14dde373018ec4d3aaa0ecc803e4b8d7"
+      "git_blob_sha1": "b89eacbb27f90c2b568ac255a895129e41c6220f"
     },
     {
       "path": "docs/试用反馈.md",
@@ -176,13 +176,13 @@
     },
     {
       "path": "scripts/prepare.py",
-      "size": 7781,
-      "git_blob_sha1": "0868bd997cf69eddeaa0eca56e619bb6e9608bf9"
+      "size": 8520,
+      "git_blob_sha1": "b7b1abe195d092f58a1d3ad3a3ba0ceb358043e0"
     },
     {
       "path": "scripts/reconcile.py",
       "size": 9092,
-      "git_blob_sha1": "e154f14db674688a93ed7f95c12b01f0a6c4e064"
+      "git_blob_sha1": "fa544d14be450c1f44af192afbb8b47bd08b4dba"
     },
     {
       "path": "scripts/suggest.py",
@@ -192,7 +192,7 @@
     {
       "path": "scripts/workflow.py",
       "size": 23114,
-      "git_blob_sha1": "788d6454a97af442d00878cd9e27b5578fa77196"
+      "git_blob_sha1": "af563a45ec6ae01c592bbbe5bbd17bf9461d6060"
     },
     {
       "path": "scripts/xlsx_read.py",
@@ -216,5 +216,5 @@
     "examples/重跑复核示例.xlsx",
     "examples/首次复核示例.xlsx"
   ],
-  "note": "v0.8.5新增确认后副本脚本，保留原表、业务位置与整理记录；旧哈希或未确认不处理。固定运行文件完整下载校验后使用，预生成xlsx由脚本本地生成。"
+  "note": "v0.8.6保留无需可选lxml时的CRLF/CR多行原值，确认后副本保留原表、业务位置与整理记录。固定运行文件完整下载校验后使用，预生成xlsx由脚本本地生成。"
 }
