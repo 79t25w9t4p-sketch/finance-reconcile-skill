@@ -72,7 +72,7 @@ def inspect_input(file, sheet=None, header_row=None):
                               capture_output=True,text=True,encoding='utf-8',timeout=30)
         if result.returncode: raise ValueError(result.stderr.strip())
         layout=json.loads(result.stdout)
-        if len(layout['candidates'])==1:
+        if len(layout['candidates'])==1 and (sheet or layout['candidates'][0]['state']=='visible'):
             selected=layout['candidates'][0]
             sheet,header_row=selected['sheet'],str(selected['headerRow'])
         else:
@@ -100,7 +100,8 @@ def main():
         inspection[side],locations[side]=inspect_input(args[side],args[side+'_sheet'],args[side+'_header_row'])
         if locations[side] is None:
             choices.append({'side':side,'field':'table','candidates':inspection[side]['candidates'],
-                            'reason':'多个明细页/表头候选，请确认位置' if inspection[side]['candidates'] else
+                            'reason':('候选为隐藏工作表，请确认是否使用' if len(inspection[side]['candidates'])==1 else
+                                      '多个明细页/表头候选，请确认位置') if inspection[side]['candidates'] else
                                      '未识别到包含常见编号和金额列的表头，请指定明细页及表头行；自定义列名可手动指定'})
     if choices:
         print(json.dumps({'status':'needs_table_choice','questions':choices,'inputOverview':inspection,

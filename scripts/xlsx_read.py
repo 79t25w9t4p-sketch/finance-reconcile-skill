@@ -29,15 +29,17 @@ def inspect_layout(wb, options):
         if ws.max_column>50: raise ValueError('工作表超过50列，请指定符合限制的明细页：'+name)
         start=int(header) if header else 1
         end=int(header) if header else min(20,ws.max_row)
-        if start>ws.max_row: raise ValueError('Header row outside sheet: '+name)
         sheets.append({'sheet':name,'state':ws.sheet_state})
+        if start>ws.max_row:
+            if sheet: raise ValueError('Header row outside sheet: '+name)
+            continue
         for number,row in enumerate(ws.iter_rows(min_row=start,max_row=end),start):
             # Formula/error cells cannot be treated as a recognized header.
             if any(c.data_type in {'f','e'} for c in row): continue
             headers=['' if c.value is None else str(c.value).strip() for c in row]
             normalized={value.lower() for value in headers}
             if normalized.intersection(reference) and normalized.intersection(amount):
-                candidate={'sheet':name,'headerRow':number,'headers':headers}
+                candidate={'sheet':name,'state':ws.sheet_state,'headerRow':number,'headers':headers}
                 output_bytes+=len(json.dumps(candidate,ensure_ascii=False).encode('utf-8'))
                 if output_bytes>2*1024*1024:
                     raise ValueError('候选表头超过2MB，请直接指定明细页和表头行')

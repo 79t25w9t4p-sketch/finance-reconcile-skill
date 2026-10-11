@@ -22,6 +22,36 @@ class Suggestions(unittest.TestCase):
             for row in rows:ws.append(row)
         wb.save(path);wb.close()
 
+    def test_header_row_without_sheet_skips_short_instruction_pages(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'notes.xlsx'
+            self.workbook(path,[('说明',[['说明']]),('明细',[['标题'],[],['编号','金额'],['A','10']])])
+            info,location=module.inspect_input(path,header_row='3')
+            self.assertEqual(location,{'sheet':'明细','header_row':'3'})
+            self.assertEqual(info['rows'],1)
+            with self.assertRaisesRegex(ValueError,'Header row outside sheet'):
+                module.inspect_input(path,'说明','3')
+
+    def test_hidden_only_candidate_requires_choice_but_explicit_sheet_is_honored(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'archive.xlsx'
+            self.workbook(path,[('说明',[['说明']]),('历史',[['编号','金额'],['A','10']])])
+            wb=openpyxl.load_workbook(path);wb['历史'].sheet_state='hidden';wb.save(path);wb.close()
+            info,location=module.inspect_input(path)
+            self.assertIsNone(location)
+            self.assertEqual(info['candidates'][0]['state'],'hidden')
+            result=subprocess.run([sys.executable,str(ROOT/'scripts/suggest.py'),'--left',str(path),'--right',str(path)],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            proposal=json.loads(result.stdout)
+            self.assertEqual(proposal['status'],'needs_table_choice')
+            self.assertIn('隐藏',proposal['questions'][0]['reason'])
+            info,location=module.inspect_input(path,sheet='历史')
+            self.assertEqual(location,{'sheet':'历史','header_row':'1'})
+            wb=openpyxl.load_workbook(path);wb['历史'].sheet_state='veryHidden';wb.save(path);wb.close()
+            info,location=module.inspect_input(path)
+            self.assertIsNone(location)
+            self.assertEqual(info['candidates'][0]['state'],'veryHidden')
+
     def test_finds_detail_sheet_and_nonfirst_header_without_printing_data(self):
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'left.xlsx'
