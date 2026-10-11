@@ -18,7 +18,7 @@ ALIASES = {
 SUMMARY_LABELS = {'合计','小计','总计','本页合计','累计合计','total','subtotal','grand total'}
 
 
-def data_warnings(table):
+def data_warnings(table, position_limit=20):
     """Flag possible non-detail rows, without removing or printing their values."""
     reference_columns=[i for i,name in enumerate(table['headers']) if name.strip().lower() in ALIASES['reference']]
     groups={'summary_rows':[],'repeated_headers':[]}
@@ -30,7 +30,8 @@ def data_warnings(table):
             groups['summary_rows'].append(number)
     reasons={'summary_rows':'编号列含疑似合计/小计标签，若为汇总行会重复计算；请确认它是汇总行还是实际业务编号',
              'repeated_headers':'明细中出现与表头相同的行，请确认是否为打印分页的重复表头'}
-    return [{'kind':kind,'count':len(rows),'rows':rows[:20],'positionsComplete':len(rows)<=20,'reason':reasons[kind]}
+    return [{'kind':kind,'count':len(rows),'rows':rows[:position_limit],
+             'positionsComplete':position_limit is None or len(rows)<=position_limit,'reason':reasons[kind]}
             for kind,rows in groups.items() if rows]
 
 
@@ -95,13 +96,13 @@ def inspect_input(file, sheet=None, header_row=None):
             sheet,header_row=selected['sheet'],str(selected['headerRow'])
         else:
             if fingerprint(path,10*1024*1024)!=before: raise ValueError('检查过程中输入文件发生变化')
-            return {'file':path.name,**layout},None
+            return {'file':path.name,'sha256':before,**layout},None
     table,metadata=load_table(path,sheet,header_row or '1')
     if metadata['sha256']!=before: raise ValueError('检查过程中输入文件发生变化')
     location={}
     if metadata['sheet'] is not None:
         location={'sheet':metadata['sheet'],'header_row':str(metadata['headerRow'])}
-    return {'file':path.name,'sheet':metadata['sheet'],'headerRow':metadata['headerRow'],
+    return {'file':path.name,'sha256':before,'sheet':metadata['sheet'],'headerRow':metadata['headerRow'],
             'headers':table['headers'],'rows':len(table['rows']),'dataWarnings':data_warnings(table)},location
 
 
